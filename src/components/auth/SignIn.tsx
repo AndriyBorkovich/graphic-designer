@@ -1,19 +1,22 @@
 
 import * as React from "react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { signIn, loading } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,37 +30,26 @@ export const SignIn = () => {
       return;
     }
 
-    setLoading(true);
-    
-    try {
-      // This is where you would integrate with an auth service
-      console.log("Signing in with:", { email, password, rememberMe });
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Success",
-        description: "Signed in successfully",
-      });
-    } catch (error) {
-      console.error("Error signing in:", error);
-      toast({
-        title: "Error",
-        description: "Invalid email or password",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    await signIn(email, password);
   };
 
-  const handleGoogleSignIn = () => {
-    console.log("Signing in with Google");
-    toast({
-      title: "Google Sign In",
-      description: "This feature is not implemented yet",
-    });
+  const handleGoogleSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sign in with Google",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -81,6 +73,7 @@ export const SignIn = () => {
               className="bg-[#353535] border-none text-white placeholder-gray-500"
               placeholder="name@example.com"
               required
+              disabled={loading}
             />
           </div>
         </div>
@@ -97,6 +90,7 @@ export const SignIn = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="bg-[#353535] border-none text-white placeholder-gray-500"
               required
+              disabled={loading}
             />
           </div>
         </div>
@@ -108,6 +102,7 @@ export const SignIn = () => {
               checked={rememberMe}
               onCheckedChange={(checked) => setRememberMe(checked as boolean)}
               className="data-[state=checked]:bg-[#4318D1] border-gray-600"
+              disabled={loading}
             />
             <label 
               htmlFor="rememberMe" 
@@ -138,6 +133,7 @@ export const SignIn = () => {
         <Button
           type="button"
           onClick={handleGoogleSignIn}
+          disabled={loading}
           className="w-full bg-[#353535] hover:bg-[#404040] text-white"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48" className="mr-2">

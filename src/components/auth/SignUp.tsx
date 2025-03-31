@@ -1,20 +1,22 @@
 
 import * as React from "react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const SignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { signUp, loading } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,35 +48,7 @@ export const SignUp = () => {
       return;
     }
 
-    setLoading(true);
-    
-    try {
-      // This is where you would integrate with an auth service
-      console.log("Creating account with:", { email, password });
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Account created",
-        description: "Your account has been created successfully",
-      });
-      
-      // Reset form
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
-      setTermsAccepted(false);
-    } catch (error) {
-      console.error("Error creating account:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create account",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    await signUp(email, password);
   };
 
   return (
@@ -98,6 +72,7 @@ export const SignUp = () => {
               className="bg-[#353535] border-none text-white placeholder-gray-500"
               placeholder="name@example.com"
               required
+              disabled={loading}
             />
           </div>
         </div>
@@ -114,6 +89,7 @@ export const SignUp = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="bg-[#353535] border-none text-white placeholder-gray-500"
               required
+              disabled={loading}
             />
           </div>
         </div>
@@ -130,6 +106,7 @@ export const SignUp = () => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="bg-[#353535] border-none text-white placeholder-gray-500"
               required
+              disabled={loading}
             />
           </div>
         </div>
@@ -140,6 +117,7 @@ export const SignUp = () => {
             checked={termsAccepted}
             onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
             className="data-[state=checked]:bg-[#4318D1] border-gray-600"
+            disabled={loading}
           />
           <label 
             htmlFor="termsAccepted" 
