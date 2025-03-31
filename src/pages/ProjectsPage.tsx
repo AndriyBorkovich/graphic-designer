@@ -97,7 +97,9 @@ const ProjectsPage = () => {
         file_size: "0 KB",
       };
 
-      const { error } = await supabase.from("projects").insert(newProject);
+      const { error } = await supabase
+        .from("projects")
+        .insert(newProject);
       
       if (error) throw error;
       
