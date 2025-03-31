@@ -1,13 +1,32 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,7 +63,7 @@ const ProjectsPage = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   // Form for project creation
   const form = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),
@@ -90,24 +109,26 @@ const ProjectsPage = () => {
   const createProject = async (values: z.infer<typeof projectSchema>) => {
     try {
       if (!user) return;
-      
+
       const newProject = {
         ...values,
         user_id: user.id,
         file_size: "0 KB",
       };
 
-      const { error } = await supabase
-        .from("projects")
-        .insert(newProject);
-      
+      const { error } = await supabase.from("projects").insert({
+        ...newProject,
+        name: newProject.name!, // Assert name is required
+        file_type: newProject.file_type!, // Assert file_type is required
+      });
+
       if (error) throw error;
-      
+
       toast({
         title: "Project created",
         description: "Your project has been successfully created.",
       });
-      
+
       setIsCreateModalOpen(false);
       form.reset();
       fetchProjects();
@@ -131,12 +152,12 @@ const ProjectsPage = () => {
         .eq("id", selectedProject.id);
 
       if (error) throw error;
-      
+
       toast({
         title: "Project deleted",
         description: "Your project has been successfully deleted.",
       });
-      
+
       setIsDeleteModalOpen(false);
       setSelectedProject(null);
       fetchProjects();
@@ -150,10 +171,10 @@ const ProjectsPage = () => {
   };
 
   const getFileIcon = (fileType: string) => {
-    switch(fileType.toLowerCase()) {
-      case 'image':
+    switch (fileType.toLowerCase()) {
+      case "image":
         return <FileImage className="h-5 w-5" />;
-      case 'text':
+      case "text":
         return <FileText className="h-5 w-5" />;
       default:
         return <FilePenLine className="h-5 w-5" />;
@@ -162,10 +183,10 @@ const ProjectsPage = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -186,7 +207,10 @@ const ProjectsPage = () => {
                 <DialogTitle>Create New Project</DialogTitle>
               </DialogHeader>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(createProject)} className="space-y-4">
+                <form
+                  onSubmit={form.handleSubmit(createProject)}
+                  className="space-y-4"
+                >
                   <FormField
                     control={form.control}
                     name="name"
@@ -194,10 +218,10 @@ const ProjectsPage = () => {
                       <FormItem>
                         <FormLabel>Project Name</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="My Awesome Design" 
-                            className="bg-[#333] border-[#444]" 
-                            {...field} 
+                          <Input
+                            placeholder="My Awesome Design"
+                            className="bg-[#333] border-[#444]"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -211,10 +235,10 @@ const ProjectsPage = () => {
                       <FormItem>
                         <FormLabel>File Type</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Design/Image/Text" 
-                            className="bg-[#333] border-[#444]" 
-                            {...field} 
+                          <Input
+                            placeholder="Design/Image/Text"
+                            className="bg-[#333] border-[#444]"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -228,10 +252,10 @@ const ProjectsPage = () => {
                       <FormItem>
                         <FormLabel>Description (Optional)</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            placeholder="A brief description of your project" 
-                            className="bg-[#333] border-[#444]" 
-                            {...field} 
+                          <Textarea
+                            placeholder="A brief description of your project"
+                            className="bg-[#333] border-[#444]"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -239,14 +263,17 @@ const ProjectsPage = () => {
                     )}
                   />
                   <div className="flex justify-end gap-2 pt-4">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => setIsCreateModalOpen(false)}
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" className="bg-[#4318D1] hover:bg-[#3614B8]">
+                    <Button
+                      type="submit"
+                      className="bg-[#4318D1] hover:bg-[#3614B8]"
+                    >
                       Create Project
                     </Button>
                   </div>
@@ -266,9 +293,13 @@ const ProjectsPage = () => {
               <div className="text-center py-8">Loading projects...</div>
             ) : projects.length === 0 ? (
               <div className="text-center py-16 border border-dashed border-[#444] rounded-lg">
-                <h3 className="text-xl font-medium text-[#888] mb-4">No projects yet</h3>
-                <p className="text-[#666] mb-6">Create your first project to get started</p>
-                <Button 
+                <h3 className="text-xl font-medium text-[#888] mb-4">
+                  No projects yet
+                </h3>
+                <p className="text-[#666] mb-6">
+                  Create your first project to get started
+                </p>
+                <Button
                   className="bg-[#4318D1] hover:bg-[#3614B8]"
                   onClick={() => setIsCreateModalOpen(true)}
                 >
@@ -278,15 +309,20 @@ const ProjectsPage = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.map((project) => (
-                  <Card key={project.id} className="bg-[#2A2A2A] border-[#333] overflow-hidden">
+                  <Card
+                    key={project.id}
+                    className="bg-[#2A2A2A] border-[#333] overflow-hidden"
+                  >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <div className="flex items-center">
                           {getFileIcon(project.file_type)}
-                          <CardTitle className="text-lg ml-2">{project.name}</CardTitle>
+                          <CardTitle className="text-lg ml-2">
+                            {project.name}
+                          </CardTitle>
                         </div>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           className="h-7 w-7 p-0 text-[#888] hover:text-white hover:bg-red-900/20"
                           onClick={() => {
@@ -320,15 +356,20 @@ const ProjectsPage = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.slice(0, 3).map((project) => (
-                  <Card key={project.id} className="bg-[#2A2A2A] border-[#333] overflow-hidden">
+                  <Card
+                    key={project.id}
+                    className="bg-[#2A2A2A] border-[#333] overflow-hidden"
+                  >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <div className="flex items-center">
                           {getFileIcon(project.file_type)}
-                          <CardTitle className="text-lg ml-2">{project.name}</CardTitle>
+                          <CardTitle className="text-lg ml-2">
+                            {project.name}
+                          </CardTitle>
                         </div>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           className="h-7 w-7 p-0 text-[#888] hover:text-white hover:bg-red-900/20"
                           onClick={() => {
@@ -366,20 +407,21 @@ const ProjectsPage = () => {
             </DialogHeader>
             <div className="py-4">
               <p className="text-[#CCC]">
-                Are you sure you want to delete <span className="font-semibold">{selectedProject?.name}</span>? 
+                Are you sure you want to delete{" "}
+                <span className="font-semibold">{selectedProject?.name}</span>?
                 This action cannot be undone.
               </p>
             </div>
             <div className="flex justify-end gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setIsDeleteModalOpen(false)}
               >
                 Cancel
               </Button>
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 variant="destructive"
                 onClick={deleteProject}
               >
