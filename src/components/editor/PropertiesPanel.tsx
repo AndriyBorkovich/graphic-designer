@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { ColorPickerTab } from "./ColorPickerTab";
 import { ToolPropertiesTab } from "./ToolPropertiesTab";
 import { LayersTab } from "./LayersTab";
+import { ToolsTab } from "./ToolsTab";
+import { Palette, Layers, SlidersHorizontal, Box } from "lucide-react";
 import {
-  Settings,
-  Palette,
-  Layers,
-  PenTool,
-  SlidersHorizontal,
-} from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Layer {
   id: string;
@@ -34,6 +33,8 @@ interface PropertiesPanelProps {
   onLayerDelete: (layerId: string) => void;
   onLayerMoveUp: (layerId: string) => void;
   onLayerMoveDown: (layerId: string) => void;
+  activeTool?: string;
+  setActiveTool?: (tool: string) => void;
 }
 
 export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
@@ -47,8 +48,10 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   onLayerDelete,
   onLayerMoveUp,
   onLayerMoveDown,
+  activeTool = "select",
+  setActiveTool = () => {},
 }) => {
-  const [activeTab, setActiveTab] = useState<string>("properties");
+  const [activeTab, setActiveTab] = useState<string>("tools");
   const [brushSize, setBrushSize] = useState<number>(24);
   const [opacity, setOpacity] = useState<number>(100);
   const [blendMode, setBlendMode] = useState<string>("normal");
@@ -78,33 +81,50 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   return (
     <div className="w-56 bg-gray-100 border-l border-gray-300 flex flex-col">
       <div className="border-b border-gray-300 p-2 flex justify-around">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className={activeTab === "properties" ? "bg-gray-200" : ""} 
+        <Button
+          variant="ghost"
+          size="icon"
+          className={activeTab === "tools" ? "bg-gray-200" : ""}
+          onClick={() => setActiveTab("tools")}
+        >
+          <Box className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={activeTab === "properties" ? "bg-gray-200" : ""}
           onClick={() => setActiveTab("properties")}
         >
           <SlidersHorizontal className="h-5 w-5" />
         </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className={activeTab === "colors" ? "bg-gray-200" : ""} 
+        <Button
+          variant="ghost"
+          size="icon"
+          className={activeTab === "colors" ? "bg-gray-200" : ""}
           onClick={() => setActiveTab("colors")}
         >
           <Palette className="h-5 w-5" />
         </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className={activeTab === "layers" ? "bg-gray-200" : ""} 
+        <Button
+          variant="ghost"
+          size="icon"
+          className={activeTab === "layers" ? "bg-gray-200" : ""}
           onClick={() => setActiveTab("layers")}
         >
           <Layers className="h-5 w-5" />
         </Button>
       </div>
-      
+
       <div className="overflow-y-auto flex-grow p-4">
+        {/* Tools Tab */}
+        {activeTab === "tools" && (
+          <ToolsTab
+            activeTool={activeTool}
+            setActiveTool={setActiveTool}
+            isDarkMode={false}
+          />
+        )}
+
         {/* Layers Tab */}
         {activeTab === "layers" && (
           <div>
@@ -133,7 +153,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
           </div>
         )}
 
-        {/* tool properties tab */}
+        {/* Tool properties tab */}
         {activeTab === "properties" && (
           <ToolPropertiesTab
             brushSize={brushSize}

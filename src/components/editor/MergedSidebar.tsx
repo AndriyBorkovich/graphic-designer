@@ -1,26 +1,10 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  MousePointer,
-  PenTool,
-  Square,
-  Circle,
-  Type,
-  Image as ImageIcon,
-  Eraser,
-  Palette,
-  Layers,
-  Settings,
-} from "lucide-react";
+import { Palette, Layers, Settings, Box } from "lucide-react";
 import { ColorPickerTab } from "./ColorPickerTab";
 import { ToolPropertiesTab } from "./ToolPropertiesTab";
 import { LayersTab } from "./LayersTab";
+import { ToolsTab } from "./ToolsTab";
 import { Separator } from "@/components/ui/separator";
 
 interface Layer {
@@ -60,20 +44,10 @@ export const MergedSidebar: React.FC<MergedSidebarProps> = ({
   onLayerMoveUp,
   onLayerMoveDown,
 }) => {
-  const [activeTab, setActiveTab] = useState<string>("properties");
+  const [activeTab, setActiveTab] = useState<string>("tools");
   const [brushSize, setBrushSize] = useState<number>(24);
   const [opacity, setOpacity] = useState<number>(100);
   const [blendMode, setBlendMode] = useState<string>("normal");
-
-  const tools = [
-    { name: "select", icon: MousePointer, tooltip: "Select", bgColor: "bg-indigo-600" },
-    { name: "draw", icon: PenTool, tooltip: "Draw", bgColor: "bg-indigo-600" },
-    { name: "rectangle", icon: Square, tooltip: "Rectangle", bgColor: "bg-gray-700" },
-    { name: "circle", icon: Circle, tooltip: "Circle", bgColor: "bg-blue-600" },
-    { name: "text", icon: Type, tooltip: "Text", bgColor: "bg-gray-700" },
-    { name: "image", icon: ImageIcon, tooltip: "Image", bgColor: "bg-gray-700" },
-    { name: "eraser", icon: Eraser, tooltip: "Eraser", bgColor: "bg-gray-700" },
-  ];
 
   // Handle color change
   const handleColorChange = (property: string, color: string) => {
@@ -99,78 +73,60 @@ export const MergedSidebar: React.FC<MergedSidebarProps> = ({
 
   return (
     <div className="w-56 bg-gray-900 text-white flex flex-col">
-      {/* Tools section title */}
-      <div className="p-4 pb-2">
-        <h2 className="text-lg font-semibold">Tools</h2>
-      </div>
-
-      {/* Tool selection row */}
-      <div className="px-3 py-2 flex flex-wrap gap-2">
-        {tools.map((tool) => (
-          <Tooltip key={tool.name}>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`w-10 h-10 rounded ${
-                  activeTool === tool.name
-                    ? tool.bgColor
-                    : "bg-gray-800 hover:bg-gray-700"
-                }`}
-                onClick={() => setActiveTool(tool.name)}
-              >
-                <tool.icon className="w-5 h-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{tool.tooltip}</TooltipContent>
-          </Tooltip>
-        ))}
-      </div>
-      
-      <Button 
-        variant="ghost" 
-        className="mx-auto my-2 bg-gray-800 text-xs py-1 px-3 rounded-md"
-      >
-        Add
-      </Button>
-
-      <Separator className="my-2 bg-gray-700" />
-
       {/* Tab buttons */}
       <div className="border-b border-gray-700 p-2 flex justify-around">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className={activeTab === "properties" ? "bg-gray-800" : ""} 
+        <Button
+          variant="ghost"
+          size="sm"
+          className={activeTab === "tools" ? "bg-gray-800" : ""}
+          onClick={() => setActiveTab("tools")}
+        >
+          <Box className="h-4 w-4 mr-1" />
+          <span className="text-xs">Tools</span>
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className={activeTab === "properties" ? "bg-gray-800" : ""}
           onClick={() => setActiveTab("properties")}
         >
           <Settings className="h-4 w-4 mr-1" />
           <span className="text-xs">Properties</span>
         </Button>
-        
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className={activeTab === "colors" ? "bg-gray-800" : ""} 
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className={activeTab === "colors" ? "bg-gray-800" : ""}
           onClick={() => setActiveTab("colors")}
         >
           <Palette className="h-4 w-4 mr-1" />
           <span className="text-xs">Colors</span>
         </Button>
-        
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className={activeTab === "layers" ? "bg-gray-800" : ""} 
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className={activeTab === "layers" ? "bg-gray-800" : ""}
           onClick={() => setActiveTab("layers")}
         >
           <Layers className="h-4 w-4 mr-1" />
           <span className="text-xs">Layers</span>
         </Button>
       </div>
-      
+
       {/* Tab content */}
       <div className="overflow-y-auto flex-grow p-4">
+        {/* Tools Tab */}
+        {activeTab === "tools" && (
+          <ToolsTab
+            activeTool={activeTool}
+            setActiveTool={setActiveTool}
+            isDarkMode={true}
+          />
+        )}
+
         {/* Properties Tab */}
         {activeTab === "properties" && (
           <ToolPropertiesTab
@@ -212,8 +168,8 @@ export const MergedSidebar: React.FC<MergedSidebarProps> = ({
         )}
       </div>
 
-      <Button 
-        variant="ghost" 
+      <Button
+        variant="ghost"
         className="mx-auto mb-4 bg-gray-800 text-xs py-1 px-3 rounded-md"
       >
         Documentation

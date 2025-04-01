@@ -1,8 +1,8 @@
-
 import React, { useState } from "react";
 import { Canvas } from "./Canvas";
 import { MergedSidebar } from "./MergedSidebar";
-import { Undo, Redo, ZoomIn, ZoomOut, Trash2 } from "lucide-react";
+import { PropertiesPanel } from "./PropertiesPanel";
+import { Undo, Redo, ZoomIn, ZoomOut, Trash2, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -29,7 +29,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [selectedObject, setSelectedObject] = useState<any>(null);
   const [layers, setLayers] = useState<Layer[]>([]);
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
-  
+  const [useDarkTheme, setUseDarkTheme] = useState<boolean>(true);
+
   // Handle zoom in function
   const handleZoomIn = () => {
     if (zoom < 200) {
@@ -55,7 +56,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     // Update the selected object in the canvas
     selectedObject.set({ [property]: value });
     setSelectedObject(selectedObject);
-    
+
     if (selectedObject.canvas) {
       selectedObject.canvas.renderAll();
     }
@@ -149,26 +150,57 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   };
 
   return (
-    <>
-      <MergedSidebar 
-        activeTool={activeTool}
-        setActiveTool={setActiveTool}
-        selectedObject={selectedObject}
-        onObjectUpdate={handleObjectUpdate}
-        layers={layers}
-        activeLayerId={activeLayerId}
-        onLayerSelect={handleLayerSelect}
-        onLayerVisibilityToggle={handleLayerVisibilityToggle}
-        onLayerAdd={handleLayerAdd}
-        onLayerDelete={handleLayerDelete}
-        onLayerMoveUp={handleLayerMoveUp}
-        onLayerMoveDown={handleLayerMoveDown}
-      />
+    <div className="flex h-full">
+      {useDarkTheme ? (
+        <MergedSidebar
+          activeTool={activeTool}
+          setActiveTool={setActiveTool}
+          selectedObject={selectedObject}
+          onObjectUpdate={handleObjectUpdate}
+          layers={layers}
+          activeLayerId={activeLayerId}
+          onLayerSelect={handleLayerSelect}
+          onLayerVisibilityToggle={handleLayerVisibilityToggle}
+          onLayerAdd={handleLayerAdd}
+          onLayerDelete={handleLayerDelete}
+          onLayerMoveUp={handleLayerMoveUp}
+          onLayerMoveDown={handleLayerMoveDown}
+        />
+      ) : (
+        <PropertiesPanel
+          activeTool={activeTool}
+          setActiveTool={setActiveTool}
+          selectedObject={selectedObject}
+          onObjectUpdate={handleObjectUpdate}
+          layers={layers}
+          activeLayerId={activeLayerId}
+          onLayerSelect={handleLayerSelect}
+          onLayerVisibilityToggle={handleLayerVisibilityToggle}
+          onLayerAdd={handleLayerAdd}
+          onLayerDelete={handleLayerDelete}
+          onLayerMoveUp={handleLayerMoveUp}
+          onLayerMoveDown={handleLayerMoveDown}
+        />
+      )}
 
       <div className="flex flex-col flex-1">
         <div className="flex justify-between items-center p-2 border-b bg-gray-50">
           <h1 className="text-xl font-bold">Graphic Editor</h1>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setUseDarkTheme(!useDarkTheme)}
+              title={
+                useDarkTheme ? "Switch to Light Theme" : "Switch to Dark Theme"
+              }
+            >
+              {useDarkTheme ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
+            </Button>
             <Button variant="ghost" size="icon" title="Undo">
               <Undo className="h-5 w-5" />
             </Button>
@@ -236,6 +268,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           />
         </div>
       </div>
-    </>
+    </div>
   );
 };
