@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Palette, Layers, Settings, Box } from "lucide-react";
 import { ColorPickerTab } from "./ColorPickerTab";
 import { ToolPropertiesTab } from "./ToolPropertiesTab";
 import { LayersTab } from "./LayersTab";
 import { ToolsTab } from "./ToolsTab";
-import { Separator } from "@/components/ui/separator";
+import { Palette, Layers, SlidersHorizontal, Box } from "lucide-react";
 
 interface Layer {
   id: string;
@@ -15,9 +14,7 @@ interface Layer {
   object: fabric.Object;
 }
 
-interface MergedSidebarProps {
-  activeTool: string;
-  setActiveTool: (tool: string) => void;
+interface PropertiesPanelProps {
   selectedObject: any;
   onObjectUpdate?: (property: string, value: any) => void;
   layers: Layer[];
@@ -28,11 +25,11 @@ interface MergedSidebarProps {
   onLayerDelete: (layerId: string) => void;
   onLayerMoveUp: (layerId: string) => void;
   onLayerMoveDown: (layerId: string) => void;
+  activeTool?: string;
+  setActiveTool?: (tool: string) => void;
 }
 
-export const MergedSidebar: React.FC<MergedSidebarProps> = ({
-  activeTool,
-  setActiveTool,
+export const SidePanel: React.FC<PropertiesPanelProps> = ({
   selectedObject,
   onObjectUpdate,
   layers,
@@ -43,6 +40,8 @@ export const MergedSidebar: React.FC<MergedSidebarProps> = ({
   onLayerDelete,
   onLayerMoveUp,
   onLayerMoveDown,
+  activeTool = "select",
+  setActiveTool = () => {},
 }) => {
   const [activeTab, setActiveTab] = useState<string>("tools");
   const [brushSize, setBrushSize] = useState<number>(24);
@@ -73,50 +72,41 @@ export const MergedSidebar: React.FC<MergedSidebarProps> = ({
 
   return (
     <div className="w-56 bg-gray-900 text-white flex flex-col">
-      {/* Tab buttons */}
       <div className="border-b border-gray-700 p-2 flex justify-around">
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           className={activeTab === "tools" ? "bg-gray-800" : ""}
           onClick={() => setActiveTab("tools")}
         >
-          <Box className="h-4 w-4 mr-1" />
-          <span className="text-xs">Tools</span>
+          <Box className="h-5 w-5" />
         </Button>
-
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           className={activeTab === "properties" ? "bg-gray-800" : ""}
           onClick={() => setActiveTab("properties")}
         >
-          <Settings className="h-4 w-4 mr-1" />
-          <span className="text-xs">Properties</span>
+          <SlidersHorizontal className="h-5 w-5" />
         </Button>
-
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           className={activeTab === "colors" ? "bg-gray-800" : ""}
           onClick={() => setActiveTab("colors")}
         >
-          <Palette className="h-4 w-4 mr-1" />
-          <span className="text-xs">Colors</span>
+          <Palette className="h-5 w-5" />
         </Button>
-
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           className={activeTab === "layers" ? "bg-gray-800" : ""}
           onClick={() => setActiveTab("layers")}
         >
-          <Layers className="h-4 w-4 mr-1" />
-          <span className="text-xs">Layers</span>
+          <Layers className="h-5 w-5" />
         </Button>
       </div>
 
-      {/* Tab content */}
       <div className="overflow-y-auto flex-grow p-4">
         {/* Tools Tab */}
         {activeTab === "tools" && (
@@ -127,33 +117,10 @@ export const MergedSidebar: React.FC<MergedSidebarProps> = ({
           />
         )}
 
-        {/* Properties Tab */}
-        {activeTab === "properties" && (
-          <ToolPropertiesTab
-            brushSize={brushSize}
-            opacity={opacity}
-            blendMode={blendMode}
-            onBrushSizeChange={handleBrushSizeChange}
-            onOpacityChange={handleOpacityChange}
-            onBlendModeChange={handleBlendModeChange}
-          />
-        )}
-
-        {/* Colors Tab */}
-        {activeTab === "colors" && (
-          <div className="space-y-4">
-            <h3 className="font-medium text-sm mb-4">Colors</h3>
-            <ColorPickerTab
-              selectedObject={selectedObject}
-              onColorChange={handleColorChange}
-            />
-          </div>
-        )}
-
         {/* Layers Tab */}
         {activeTab === "layers" && (
           <div>
-            <h3 className="font-medium text-sm mb-4">Layers</h3>
+            <h3 className="font-medium text-lg mb-4">Layers</h3>
             <LayersTab
               layers={layers}
               activeLayerId={activeLayerId}
@@ -166,14 +133,30 @@ export const MergedSidebar: React.FC<MergedSidebarProps> = ({
             />
           </div>
         )}
-      </div>
 
-      <Button
-        variant="ghost"
-        className="mx-auto mb-4 bg-gray-800 text-xs py-1 px-3 rounded-md"
-      >
-        Documentation
-      </Button>
+        {/* Colors Tab */}
+        {activeTab === "colors" && (
+          <div className="space-y-4">
+            <h3 className="font-medium text-lg mb-4">Colors</h3>
+            <ColorPickerTab
+              selectedObject={selectedObject}
+              onColorChange={handleColorChange}
+            />
+          </div>
+        )}
+
+        {/* Tool properties tab */}
+        {activeTab === "properties" && (
+          <ToolPropertiesTab
+            brushSize={brushSize}
+            opacity={opacity}
+            blendMode={blendMode}
+            onBrushSizeChange={handleBrushSizeChange}
+            onOpacityChange={handleOpacityChange}
+            onBlendModeChange={handleBlendModeChange}
+          />
+        )}
+      </div>
     </div>
   );
 };

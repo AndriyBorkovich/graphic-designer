@@ -21,6 +21,10 @@ interface CanvasProps {
   setActiveLayerId: (layerId: string | null) => void;
 }
 
+// Default canvas dimensions
+const DEFAULT_WIDTH = 1302;
+const DEFAULT_HEIGHT = 800;
+
 export const Canvas: React.FC<CanvasProps> = ({
   activeTool,
   zoom,
@@ -31,122 +35,211 @@ export const Canvas: React.FC<CanvasProps> = ({
   setActiveLayerId,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const isDrawing = useRef(false);
+  const [dimensions, setDimensions] = useState({
+    width: DEFAULT_WIDTH,
+    height: DEFAULT_HEIGHT,
+  });
 
-  // Initialize canvas
+  // Initialize canvas and handle resize
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !canvasContainerRef.current) return;
 
-    const fabricCanvas = new fabric.Canvas(canvasRef.current, {
-      width: 1600,
-      height: 900,
-      backgroundColor: "#ffffff",
-      preserveObjectStacking: true,
-    });
+    let fabricCanvas: fabric.Canvas | null = null;
 
-    setCanvas(fabricCanvas);
+    try {
+      // Initialize with fixed dimensions first
+      fabricCanvas = new fabric.Canvas(canvasRef.current, {
+        width: DEFAULT_WIDTH,
+        height: DEFAULT_HEIGHT,
+        backgroundColor: "#ffffff",
+        preserveObjectStacking: true,
+      });
 
-    // Selection event
-    fabricCanvas.on("selection:created", (e) => {
-      setSelectedObject(e.selected ? e.selected[0] : null);
+      // Set canvas reference
+      setCanvas(fabricCanvas);
 
-      // Find the layer that corresponds to the selected object
-      if (e.selected && e.selected[0]) {
-        const selectedObject = e.selected[0];
-        const layer = layers.find((layer) => layer.object === selectedObject);
-        if (layer) {
-          setActiveLayerId(layer.id);
+      // Then adjust to container size
+      const adjustCanvasSize = () => {
+        if (!canvasContainerRef.current || !fabricCanvas) return;
+
+        try {
+          // Get the container dimensions
+          const containerWidth = canvasContainerRef.current.clientWidth;
+          const containerHeight = canvasContainerRef.current.clientHeight;
+
+          // Apply zoom level
+          const zoomRatio = zoom / 100;
+
+          // Set the canvas dimensions to match container - safely check if method exists
+          if (typeof fabricCanvas.setDimensions === "function") {
+            fabricCanvas.setDimensions(
+              {
+                width: containerWidth,
+                height: containerHeight,
+              },
+              { cssOnly: false }
+            );
+          }
+
+          // Safely set zoom
+          if (typeof fabricCanvas.setZoom === "function") {
+            fabricCanvas.setZoom(zoomRatio);
+          }
+
+          // Update state
+          setDimensions({
+            width: containerWidth,
+            height: containerHeight,
+          });
+
+          // Safely center objects
+          try {
+            if (
+              fabricCanvas.getObjects &&
+              fabricCanvas.getObjects().length > 0
+            ) {
+              if (typeof fabricCanvas.centerObject === "function") {
+                fabricCanvas.centerObject(fabricCanvas.getObjects()[0]);
+              }
+            }
+          } catch (error) {
+            console.warn("Could not center objects:", error);
+          }
+
+          // Safely render
+          if (typeof fabricCanvas.renderAll === "function") {
+            fabricCanvas.renderAll();
+          }
+        } catch (error) {
+          console.error("Error adjusting canvas size:", error);
         }
+      };
+
+      // Adjust size initially and on resize
+      adjustCanvasSize();
+      window.addEventListener("resize", adjustCanvasSize);
+
+      // Add event handlers only if canvas was created successfully
+      if (fabricCanvas) {
+        // Selection event
+        fabricCanvas.on("selection:created", (e) => {
+          setSelectedObject(e.selected ? e.selected[0] : null);
+
+          // Find the layer that corresponds to the selected object
+          if (e.selected && e.selected[0]) {
+            const selectedObject = e.selected[0];
+            const layer = layers.find(
+              (layer) => layer.object === selectedObject
+            );
+            if (layer) {
+              setActiveLayerId(layer.id);
+            }
+          }
+        });
+
+        fabricCanvas.on("selection:updated", (e) => {
+          setSelectedObject(e.selected ? e.selected[0] : null);
+
+          // Find the layer that corresponds to the selected object
+          if (e.selected && e.selected[0]) {
+            const selectedObject = e.selected[0];
+            const layer = layers.find(
+              (layer) => layer.object === selectedObject
+            );
+            if (layer) {
+              setActiveLayerId(layer.id);
+            }
+          }
+        });
+
+        fabricCanvas.on("selection:cleared", () => {
+          setSelectedObject(null);
+          setActiveLayerId(null);
+        });
+
+        // Object modified event
+        fabricCanvas.on("object:modified", (e) => {
+          if (e.target) {
+            setSelectedObject(e.target);
+          }
+        });
+
+        // Object added event
+        fabricCanvas.on("object:added", (e) => {
+          if (!e.target) return;
+
+          // Check if this is a programmatic addition from loading layers
+          if ((e.target as any)._skipLayerCreation) {
+            delete (e.target as any)._skipLayerCreation;
+            return;
+          }
+
+          const newObject = e.target;
+
+          // Create a new layer for the object
+          const layerId = uuidv4();
+          let layerType: Layer["type"] = "shape";
+          let layerName = "New Shape";
+
+          if (newObject instanceof fabric.Rect) {
+            layerType = "shape";
+            layerName = "Rectangle";
+          } else if (newObject instanceof fabric.Circle) {
+            layerType = "shape";
+            layerName = "Circle";
+          } else if (newObject instanceof fabric.Textbox) {
+            layerType = "text";
+            layerName = "Text";
+          } else if (newObject instanceof fabric.Image) {
+            layerType = "image";
+            layerName = "Image";
+          } else if (newObject instanceof fabric.Path) {
+            layerType = "shape";
+            layerName = "Path";
+          }
+
+          const newLayer = {
+            id: layerId,
+            name: layerName,
+            type: layerType,
+            visible: true,
+            object: newObject,
+          } as Layer;
+
+          setLayers((prevLayers: Layer[]) => [...prevLayers, newLayer]);
+          setActiveLayerId(layerId);
+        });
+
+        // Add background layer only if canvas was created successfully
+        const backgroundLayer = {
+          id: uuidv4(),
+          name: "Background",
+          type: "background" as const,
+          visible: true,
+          object: fabricCanvas.backgroundImage || fabricCanvas,
+        } as Layer;
+
+        setLayers([backgroundLayer]);
       }
-    });
 
-    fabricCanvas.on("selection:updated", (e) => {
-      setSelectedObject(e.selected ? e.selected[0] : null);
-
-      // Find the layer that corresponds to the selected object
-      if (e.selected && e.selected[0]) {
-        const selectedObject = e.selected[0];
-        const layer = layers.find((layer) => layer.object === selectedObject);
-        if (layer) {
-          setActiveLayerId(layer.id);
+      return () => {
+        window.removeEventListener("resize", adjustCanvasSize);
+        if (fabricCanvas) {
+          fabricCanvas.dispose();
         }
-      }
-    });
-
-    fabricCanvas.on("selection:cleared", () => {
-      setSelectedObject(null);
-      setActiveLayerId(null);
-    });
-
-    // Object modified event
-    fabricCanvas.on("object:modified", (e) => {
-      if (e.target) {
-        setSelectedObject(e.target);
-      }
-    });
-
-    // Object added event
-    fabricCanvas.on("object:added", (e) => {
-      if (!e.target) return;
-
-      // Check if this is a programmatic addition from loading layers
-      if ((e.target as any)._skipLayerCreation) {
-        delete (e.target as any)._skipLayerCreation;
-        return;
-      }
-
-      const newObject = e.target;
-
-      // Create a new layer for the object
-      const layerId = uuidv4();
-      let layerType: Layer["type"] = "shape";
-      let layerName = "New Shape";
-
-      if (newObject instanceof fabric.Rect) {
-        layerType = "shape";
-        layerName = "Rectangle";
-      } else if (newObject instanceof fabric.Circle) {
-        layerType = "shape";
-        layerName = "Circle";
-      } else if (newObject instanceof fabric.Textbox) {
-        layerType = "text";
-        layerName = "Text";
-      } else if (newObject instanceof fabric.Image) {
-        layerType = "image";
-        layerName = "Image";
-      } else if (newObject instanceof fabric.Path) {
-        layerType = "shape";
-        layerName = "Path";
-      }
-
-      const newLayer = {
-        id: layerId,
-        name: layerName,
-        type: layerType,
-        visible: true,
-        object: newObject,
-      } as Layer;
-
-      setLayers((prevLayers: Layer[]) => [...prevLayers, newLayer]);
-      setActiveLayerId(layerId);
-    });
-
-    // Add background layer
-    const backgroundLayer = {
-      id: uuidv4(),
-      name: "Background",
-      type: "background" as const,
-      visible: true,
-      object: fabricCanvas.backgroundImage || fabricCanvas,
-    } as Layer;
-
-    setLayers([backgroundLayer]);
-
-    return () => {
-      fabricCanvas.dispose();
-    };
-  }, [setSelectedObject, setLayers, setActiveLayerId]);
+      };
+    } catch (error) {
+      console.error("Error initializing canvas:", error);
+      return () => {
+        if (fabricCanvas) {
+          fabricCanvas.dispose();
+        }
+      };
+    }
+  }, [zoom, setSelectedObject, setLayers, setActiveLayerId]);
 
   // Effect for layers changing
   useEffect(() => {
@@ -227,14 +320,35 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Update zoom
   useEffect(() => {
-    if (!canvas) return;
+    if (!canvas || !canvasContainerRef.current) return;
 
-    const zoomRatio = zoom / 100;
-    canvas.setZoom(zoomRatio);
-    canvas.setWidth(1600 * zoomRatio);
-    canvas.setHeight(900 * zoomRatio);
+    try {
+      // Get current container dimensions
+      const containerWidth = canvasContainerRef.current.clientWidth;
+      const containerHeight = canvasContainerRef.current.clientHeight;
 
-    canvas.renderAll();
+      const zoomRatio = zoom / 100;
+
+      // Safely set dimensions - first check if the method exists
+      if (typeof canvas.setDimensions === "function") {
+        canvas.setDimensions({
+          width: containerWidth,
+          height: containerHeight,
+        });
+      }
+
+      // Safely set zoom if the method exists
+      if (typeof canvas.setZoom === "function") {
+        canvas.setZoom(zoomRatio);
+      }
+
+      // Safely render if the method exists
+      if (typeof canvas.renderAll === "function") {
+        canvas.renderAll();
+      }
+    } catch (error) {
+      console.error("Error updating canvas zoom:", error);
+    }
   }, [zoom, canvas]);
 
   // Rectangle Drawing
@@ -271,6 +385,18 @@ export const Canvas: React.FC<CanvasProps> = ({
     const width = Math.abs(pointer.x - (activeObj.left as number));
     const height = Math.abs(pointer.y - (activeObj.top as number));
 
+    // Ensure rectangle preserves initial corner position
+    const originalX = activeObj.left as number;
+    const originalY = activeObj.top as number;
+
+    if (pointer.x < originalX) {
+      activeObj.set({ left: pointer.x });
+    }
+
+    if (pointer.y < originalY) {
+      activeObj.set({ top: pointer.y });
+    }
+
     activeObj.set({
       width: width,
       height: height,
@@ -294,6 +420,8 @@ export const Canvas: React.FC<CanvasProps> = ({
       stroke: "#000000",
       strokeWidth: 2,
       selectable: false,
+      originX: "center",
+      originY: "center",
     });
 
     canvas.add(circle);
@@ -309,11 +437,12 @@ export const Canvas: React.FC<CanvasProps> = ({
 
     if (!activeObj) return;
 
-    const radius =
-      Math.sqrt(
-        Math.pow(pointer.x - (activeObj.left as number), 2) +
-          Math.pow(pointer.y - (activeObj.top as number), 2)
-      ) / 2;
+    const x = activeObj.left as number;
+    const y = activeObj.top as number;
+
+    const radius = Math.sqrt(
+      Math.pow(pointer.x - x, 2) + Math.pow(pointer.y - y, 2)
+    );
 
     activeObj.set({
       radius: radius,
@@ -358,11 +487,20 @@ export const Canvas: React.FC<CanvasProps> = ({
   };
 
   return (
-    <div className="relative bg-white shadow-lg">
+    <div
+      ref={canvasContainerRef}
+      className="w-full h-full flex items-center justify-center"
+      style={{
+        backgroundColor: "white",
+        overflow: "auto",
+        position: "relative",
+      }}
+    >
       <canvas ref={canvasRef} className="border border-gray-300" />
       {!canvas && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-70">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mb-3"></div>
+          <p className="text-sm text-gray-600">Loading canvas...</p>
         </div>
       )}
     </div>
