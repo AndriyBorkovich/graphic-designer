@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -32,7 +31,9 @@ export const ToolPropertiesTab: React.FC<ToolPropertiesTabProps> = ({
       <h3 className="font-medium text-sm">Effects</h3>
 
       <div className="mt-4 text-sm">
-        <div className="font-medium mb-3 text-xs text-gray-300">Tool Properties</div>
+        <div className="font-medium mb-3 text-xs text-gray-300">
+          Tool properties
+        </div>
 
         <div className="mb-3">
           <div className="flex justify-between items-center mb-1">
@@ -71,8 +72,11 @@ export const ToolPropertiesTab: React.FC<ToolPropertiesTabProps> = ({
         </div>
 
         <div className="mb-3">
-          <Label htmlFor="blend-mode" className="text-xs text-gray-300 block mb-1">
-            Blend Mode
+          <Label
+            htmlFor="blend-mode"
+            className="text-xs text-gray-300 block mb-1"
+          >
+            Blend mode
           </Label>
           <Select value={blendMode} onValueChange={onBlendModeChange}>
             <SelectTrigger className="h-7 text-xs bg-gray-800 border-gray-700">

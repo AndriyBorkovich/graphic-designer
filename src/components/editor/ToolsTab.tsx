@@ -74,16 +74,6 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
           </Tooltip>
         ))}
       </div>
-      <Button
-        variant={isDarkMode ? "ghost" : "outline"}
-        className={
-          isDarkMode
-            ? "mt-4 w-full bg-gray-800 hover:bg-gray-700"
-            : "mt-4 w-full"
-        }
-      >
-        Add
-      </Button>
     </div>
   );
 };

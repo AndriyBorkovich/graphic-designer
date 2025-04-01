@@ -117,7 +117,6 @@ export const SidePanel: React.FC<PropertiesPanelProps> = ({
           />
         )}
 
-        {/* Layers Tab */}
         {activeTab === "layers" && (
           <div>
             <h3 className="font-medium text-lg mb-4">Layers</h3>
@@ -134,7 +133,6 @@ export const SidePanel: React.FC<PropertiesPanelProps> = ({
           </div>
         )}
 
-        {/* Colors Tab */}
         {activeTab === "colors" && (
           <div className="space-y-4">
             <h3 className="font-medium text-lg mb-4">Colors</h3>
@@ -145,7 +143,6 @@ export const SidePanel: React.FC<PropertiesPanelProps> = ({
           </div>
         )}
 
-        {/* Tool properties tab */}
         {activeTab === "properties" && (
           <ToolPropertiesTab
             brushSize={brushSize}
