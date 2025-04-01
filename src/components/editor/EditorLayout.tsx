@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Toolbox } from "./Toolbox";
 import { Canvas } from "./Canvas";
@@ -6,6 +7,7 @@ import { Undo, Redo, ZoomIn, ZoomOut, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { fabric } from "fabric";
 
 interface Layer {
   id: string;

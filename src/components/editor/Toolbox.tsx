@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +14,6 @@ import {
   Type,
   Image,
   Eraser,
-  Trash2,
 } from "lucide-react";
 
 interface ToolboxProps {
@@ -42,7 +42,7 @@ export const Toolbox: React.FC<ToolboxProps> = ({
   ];
 
   return (
-    <div className="w-16 bg-gray-900 text-white flex flex-col items-center py-4">
+    <div className="w-16 bg-gray-800 text-white flex flex-col items-center py-4">
       <div className="text-xs font-bold mb-4">Tools</div>
       <div className="flex flex-col gap-2">
         {tools.map((tool) => (
