@@ -40,6 +40,13 @@ export const Canvas: React.FC<CanvasProps> = ({ activeTool, zoom, setSelectedObj
       setSelectedObject(null);
     });
     
+    // Object modified event
+    fabricCanvas.on("object:modified", (e) => {
+      if (e.target) {
+        setSelectedObject(e.target);
+      }
+    });
+    
     return () => {
       fabricCanvas.dispose();
     };

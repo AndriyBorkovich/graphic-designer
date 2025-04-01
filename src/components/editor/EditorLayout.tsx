@@ -33,6 +33,21 @@ export const EditorLayout: React.FC = () => {
     }
   };
   
+  const handleObjectUpdate = (property: string, value: any) => {
+    if (!selectedObject) return;
+    
+    // Update the selected object in the canvas
+    selectedObject.set({ [property]: value });
+    
+    // Update the object in the state
+    setSelectedObject(selectedObject);
+    
+    // Render the canvas
+    if (selectedObject.canvas) {
+      selectedObject.canvas.renderAll();
+    }
+  };
+  
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       <div className="flex justify-between items-center p-2 border-b bg-gray-50">
@@ -61,10 +76,13 @@ export const EditorLayout: React.FC = () => {
           <Canvas 
             activeTool={activeTool} 
             zoom={zoom} 
-            setSelectedObject={setSelectedObject} 
+            setSelectedObject={setSelectedObject}
           />
         </div>
-        <PropertiesPanel selectedObject={selectedObject} />
+        <PropertiesPanel 
+          selectedObject={selectedObject}
+          onObjectUpdate={handleObjectUpdate} 
+        />
       </div>
       <div className="p-2 border-t bg-gray-50 flex items-center justify-between">
         <div className="text-sm text-gray-500">Project Name</div>
