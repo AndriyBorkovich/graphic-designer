@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Toolbox } from "./Toolbox";
 import { Canvas } from "./Canvas";
@@ -17,8 +16,20 @@ interface Layer {
   object: fabric.Object;
 }
 
-export const EditorLayout: React.FC = () => {
-  const [activeTool, setActiveTool] = useState<string>("select");
+interface EditorLayoutProps {
+  activeTool?: string;
+}
+
+export const EditorLayout: React.FC<EditorLayoutProps> = ({
+  activeTool: externalActiveTool,
+}) => {
+  // Use the external activeTool if provided, otherwise use internal state
+  const [internalActiveTool, setInternalActiveTool] =
+    useState<string>("select");
+
+  // Combine external and internal tool states
+  const activeTool = externalActiveTool || internalActiveTool;
+
   const [zoom, setZoom] = useState<number>(100);
   const [selectedObject, setSelectedObject] = useState<any>(null);
   const [layers, setLayers] = useState<Layer[]>([]);
@@ -204,8 +215,19 @@ export const EditorLayout: React.FC = () => {
         </div>
       </div>
       <div className="flex flex-1 overflow-hidden">
-        <Toolbox activeTool={activeTool} setActiveTool={setActiveTool} />
         <div className="flex-1 bg-gray-200 overflow-auto p-4 flex items-center justify-center">
+          <PropertiesPanel
+            selectedObject={selectedObject}
+            onObjectUpdate={handleObjectUpdate}
+            layers={layers}
+            activeLayerId={activeLayerId}
+            onLayerSelect={handleLayerSelect}
+            onLayerVisibilityToggle={handleLayerVisibilityToggle}
+            onLayerAdd={handleLayerAdd}
+            onLayerDelete={handleLayerDelete}
+            onLayerMoveUp={handleLayerMoveUp}
+            onLayerMoveDown={handleLayerMoveDown}
+          />
           <Canvas
             activeTool={activeTool}
             zoom={zoom}
@@ -215,24 +237,6 @@ export const EditorLayout: React.FC = () => {
             activeLayerId={activeLayerId}
             setActiveLayerId={setActiveLayerId}
           />
-        </div>
-        <PropertiesPanel
-          selectedObject={selectedObject}
-          onObjectUpdate={handleObjectUpdate}
-          layers={layers}
-          activeLayerId={activeLayerId}
-          onLayerSelect={handleLayerSelect}
-          onLayerVisibilityToggle={handleLayerVisibilityToggle}
-          onLayerAdd={handleLayerAdd}
-          onLayerDelete={handleLayerDelete}
-          onLayerMoveUp={handleLayerMoveUp}
-          onLayerMoveDown={handleLayerMoveDown}
-        />
-      </div>
-      <div className="p-2 border-t bg-gray-50 flex items-center justify-between">
-        <div className="text-sm text-gray-500">Project Name</div>
-        <div className="flex items-center gap-2 text-sm">
-          <span>Dimensions: 1920×1080</span>
         </div>
       </div>
     </div>

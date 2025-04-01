@@ -1,22 +1,16 @@
-
 import React, { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { EditorLayout } from "@/components/editor/EditorLayout";
-import { GlobalSidebar } from "@/components/editor/GlobalSidebar";
 
 const EditorPage: React.FC = () => {
-  const [activeGlobalTool, setActiveGlobalTool] = useState<string | null>("draw");
+  const [activeDrawingTool, setActiveDrawingTool] = useState<string>("select");
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-grow flex">
-        <GlobalSidebar 
-          activeTool={activeGlobalTool} 
-          setActiveTool={setActiveGlobalTool}
-        />
-        <EditorLayout />
+      <main className="flex-grow flex h-[calc(100vh-8rem)]">
+        <EditorLayout activeTool={activeDrawingTool} />
       </main>
       <Footer />
     </div>
