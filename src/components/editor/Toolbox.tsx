@@ -1,16 +1,19 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { 
-  MousePointer, 
-  PenTool, 
-  Square, 
-  Circle, 
-  Type, 
-  Image, 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  MousePointer,
+  PenTool,
+  Square,
+  Circle,
+  Type,
+  Image,
   Eraser,
-  Trash2
+  Trash2,
 } from "lucide-react";
 
 interface ToolboxProps {
@@ -24,7 +27,10 @@ type Tool = {
   tooltip: string;
 };
 
-export const Toolbox: React.FC<ToolboxProps> = ({ activeTool, setActiveTool }) => {
+export const Toolbox: React.FC<ToolboxProps> = ({
+  activeTool,
+  setActiveTool,
+}) => {
   const tools: Tool[] = [
     { name: "select", icon: MousePointer, tooltip: "Select" },
     { name: "draw", icon: PenTool, tooltip: "Draw" },
@@ -32,9 +38,9 @@ export const Toolbox: React.FC<ToolboxProps> = ({ activeTool, setActiveTool }) =
     { name: "circle", icon: Circle, tooltip: "Circle" },
     { name: "text", icon: Type, tooltip: "Text" },
     { name: "image", icon: Image, tooltip: "Image" },
-    { name: "eraser", icon: Eraser, tooltip: "Eraser" }
+    { name: "eraser", icon: Eraser, tooltip: "Eraser" },
   ];
-  
+
   return (
     <div className="w-16 bg-gray-900 text-white flex flex-col items-center py-4">
       <div className="text-xs font-bold mb-4">Tools</div>
@@ -58,21 +64,6 @@ export const Toolbox: React.FC<ToolboxProps> = ({ activeTool, setActiveTool }) =
             <TooltipContent side="right">{tool.tooltip}</TooltipContent>
           </Tooltip>
         ))}
-      </div>
-      
-      <div className="mt-auto">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-10 h-10 rounded text-red-400 hover:text-red-300 hover:bg-gray-800"
-            >
-              <Trash2 className="w-5 h-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">Delete</TooltipContent>
-        </Tooltip>
       </div>
     </div>
   );
