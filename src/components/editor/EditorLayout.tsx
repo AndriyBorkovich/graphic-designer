@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Canvas } from "./Canvas";
-import { PropertiesPanel } from "./PropertiesPanel";
+import { MergedSidebar } from "./MergedSidebar";
 import { Undo, Redo, ZoomIn, ZoomOut, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -18,16 +18,19 @@ interface Layer {
 
 interface EditorLayoutProps {
   activeTool?: string;
+  setActiveTool: (tool: string) => void;
 }
 
 export const EditorLayout: React.FC<EditorLayoutProps> = ({
   activeTool = "select",
+  setActiveTool,
 }) => {
   const [zoom, setZoom] = useState<number>(100);
   const [selectedObject, setSelectedObject] = useState<any>(null);
   const [layers, setLayers] = useState<Layer[]>([]);
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
-
+  
+  // Handle zoom in function
   const handleZoomIn = () => {
     if (zoom < 200) {
       setZoom(zoom + 10);
@@ -36,6 +39,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
+  // Handle zoom out function
   const handleZoomOut = () => {
     if (zoom > 50) {
       setZoom(zoom - 10);
@@ -44,16 +48,14 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
+  // Object update handler
   const handleObjectUpdate = (property: string, value: any) => {
     if (!selectedObject) return;
 
     // Update the selected object in the canvas
     selectedObject.set({ [property]: value });
-
-    // Update the object in the state
     setSelectedObject(selectedObject);
-
-    // Render the canvas
+    
     if (selectedObject.canvas) {
       selectedObject.canvas.renderAll();
     }
@@ -79,7 +81,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   };
 
   const handleLayerAdd = () => {
-    // This is a placeholder. In a real app, you'd show a dialog to select layer type
     toast.info("Layer adding functionality to be implemented");
   };
 
@@ -148,78 +149,81 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] flex-grow">
-      <div className="flex justify-between items-center p-2 border-b bg-gray-50">
-        <h1 className="text-xl font-bold">Graphic Editor</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" title="Undo">
-            <Undo className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" title="Redo">
-            <Redo className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center border rounded-md">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                if (zoom > 50) {
-                  setZoom(zoom - 10);
-                } else {
-                  toast.info("Minimum zoom reached");
-                }
-              }}
-              title="Zoom Out"
-            >
-              <ZoomOut className="h-4 w-4" />
+    <>
+      <MergedSidebar 
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
+        selectedObject={selectedObject}
+        onObjectUpdate={handleObjectUpdate}
+        layers={layers}
+        activeLayerId={activeLayerId}
+        onLayerSelect={handleLayerSelect}
+        onLayerVisibilityToggle={handleLayerVisibilityToggle}
+        onLayerAdd={handleLayerAdd}
+        onLayerDelete={handleLayerDelete}
+        onLayerMoveUp={handleLayerMoveUp}
+        onLayerMoveDown={handleLayerMoveDown}
+      />
+
+      <div className="flex flex-col flex-1">
+        <div className="flex justify-between items-center p-2 border-b bg-gray-50">
+          <h1 className="text-xl font-bold">Graphic Editor</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" title="Undo">
+              <Undo className="h-5 w-5" />
             </Button>
-            <span className="text-sm font-medium w-12 text-center">
-              {zoom}%
-            </span>
+            <Button variant="ghost" size="icon" title="Redo">
+              <Redo className="h-5 w-5" />
+            </Button>
+            <div className="flex items-center border rounded-md">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleZoomOut}
+                title="Zoom Out"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-medium w-12 text-center">
+                {zoom}%
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleZoomIn}
+                title="Zoom In"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </div>
             <Button
               variant="ghost"
               size="icon"
+              className="text-red-500 hover:bg-red-50"
               onClick={() => {
-                if (zoom < 200) {
-                  setZoom(zoom + 10);
-                } else {
-                  toast.info("Maximum zoom reached");
+                if (selectedObject && selectedObject.canvas) {
+                  const canvas = selectedObject.canvas;
+                  canvas.remove(selectedObject);
+                  setSelectedObject(null);
+
+                  // Remove the corresponding layer
+                  const layerToRemove = layers.find(
+                    (l) => l.object === selectedObject
+                  );
+                  if (layerToRemove) {
+                    handleLayerDelete(layerToRemove.id);
+                  }
+
+                  toast.success("Object deleted");
                 }
               }}
-              title="Zoom In"
+              disabled={!selectedObject}
+              title="Delete Selected"
             >
-              <ZoomIn className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-red-500 hover:bg-red-50"
-            onClick={() => {
-              if (selectedObject && selectedObject.canvas) {
-                const canvas = selectedObject.canvas;
-                canvas.remove(selectedObject);
-                setSelectedObject(null);
-
-                // Remove the corresponding layer
-                const layerToRemove = layers.find(
-                  (l) => l.object === selectedObject
-                );
-                if (layerToRemove) {
-                  handleLayerDelete(layerToRemove.id);
-                }
-
-                toast.success("Object deleted");
-              }
-            }}
-            disabled={!selectedObject}
-            title="Delete Selected"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
         </div>
-      </div>
-      <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 bg-gray-200 overflow-auto p-4 flex items-center justify-center">
           <Canvas
             activeTool={activeTool}
@@ -231,28 +235,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             setActiveLayerId={setActiveLayerId}
           />
         </div>
-        <PropertiesPanel
-          selectedObject={selectedObject}
-          onObjectUpdate={(property, value) => {
-            if (!selectedObject) return;
-            
-            selectedObject.set({ [property]: value });
-            setSelectedObject(selectedObject);
-            
-            if (selectedObject.canvas) {
-              selectedObject.canvas.renderAll();
-            }
-          }}
-          layers={layers}
-          activeLayerId={activeLayerId}
-          onLayerSelect={handleLayerSelect}
-          onLayerVisibilityToggle={handleLayerVisibilityToggle}
-          onLayerAdd={handleLayerAdd}
-          onLayerDelete={handleLayerDelete}
-          onLayerMoveUp={handleLayerMoveUp}
-          onLayerMoveDown={handleLayerMoveDown}
-        />
       </div>
-    </div>
+    </>
   );
 };

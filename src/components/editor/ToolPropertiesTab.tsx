@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -28,17 +29,17 @@ export const ToolPropertiesTab: React.FC<ToolPropertiesTabProps> = ({
 }) => {
   return (
     <div>
-      <h3 className="font-medium text-lg">Effects</h3>
+      <h3 className="font-medium text-sm">Effects</h3>
 
-      <div className="mt-4">
-        <div className="font-medium mb-3">Tool Properties</div>
+      <div className="mt-4 text-sm">
+        <div className="font-medium mb-3 text-xs text-gray-300">Tool Properties</div>
 
         <div className="mb-3">
           <div className="flex justify-between items-center mb-1">
-            <Label htmlFor="brush-size" className="text-sm">
+            <Label htmlFor="brush-size" className="text-xs text-gray-300">
               Brush Size
             </Label>
-            <span className="text-sm font-medium">{brushSize}px</span>
+            <span className="text-xs font-medium">{brushSize}px</span>
           </div>
           <Slider
             id="brush-size"
@@ -47,15 +48,16 @@ export const ToolPropertiesTab: React.FC<ToolPropertiesTabProps> = ({
             step={1}
             value={[brushSize]}
             onValueChange={onBrushSizeChange}
+            className="mt-1"
           />
         </div>
 
         <div className="mb-3">
           <div className="flex justify-between items-center mb-1">
-            <Label htmlFor="opacity" className="text-sm">
+            <Label htmlFor="opacity" className="text-xs text-gray-300">
               Opacity
             </Label>
-            <span className="text-sm font-medium">{opacity}%</span>
+            <span className="text-xs font-medium">{opacity}%</span>
           </div>
           <Slider
             id="opacity"
@@ -64,15 +66,16 @@ export const ToolPropertiesTab: React.FC<ToolPropertiesTabProps> = ({
             step={1}
             value={[opacity]}
             onValueChange={onOpacityChange}
+            className="mt-1"
           />
         </div>
 
         <div className="mb-3">
-          <Label htmlFor="blend-mode" className="text-sm block mb-1">
+          <Label htmlFor="blend-mode" className="text-xs text-gray-300 block mb-1">
             Blend Mode
           </Label>
           <Select value={blendMode} onValueChange={onBlendModeChange}>
-            <SelectTrigger className="h-8">
+            <SelectTrigger className="h-7 text-xs bg-gray-800 border-gray-700">
               <SelectValue placeholder="Select a blend mode" />
             </SelectTrigger>
             <SelectContent>
