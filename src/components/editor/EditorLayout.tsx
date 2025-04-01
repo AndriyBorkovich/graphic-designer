@@ -1,5 +1,5 @@
+
 import React, { useState } from "react";
-import { Toolbox } from "./Toolbox";
 import { Canvas } from "./Canvas";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { Undo, Redo, ZoomIn, ZoomOut, Trash2 } from "lucide-react";
@@ -21,15 +21,8 @@ interface EditorLayoutProps {
 }
 
 export const EditorLayout: React.FC<EditorLayoutProps> = ({
-  activeTool: externalActiveTool,
+  activeTool = "select",
 }) => {
-  // Use the external activeTool if provided, otherwise use internal state
-  const [internalActiveTool, setInternalActiveTool] =
-    useState<string>("select");
-
-  // Combine external and internal tool states
-  const activeTool = externalActiveTool || internalActiveTool;
-
   const [zoom, setZoom] = useState<number>(100);
   const [selectedObject, setSelectedObject] = useState<any>(null);
   const [layers, setLayers] = useState<Layer[]>([]);
@@ -155,7 +148,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-[calc(100vh-4rem)] flex-grow">
       <div className="flex justify-between items-center p-2 border-b bg-gray-50">
         <h1 className="text-xl font-bold">Graphic Editor</h1>
         <div className="flex items-center gap-2">
@@ -169,7 +162,13 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleZoomOut}
+              onClick={() => {
+                if (zoom > 50) {
+                  setZoom(zoom - 10);
+                } else {
+                  toast.info("Minimum zoom reached");
+                }
+              }}
               title="Zoom Out"
             >
               <ZoomOut className="h-4 w-4" />
@@ -180,7 +179,13 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleZoomIn}
+              onClick={() => {
+                if (zoom < 200) {
+                  setZoom(zoom + 10);
+                } else {
+                  toast.info("Maximum zoom reached");
+                }
+              }}
               title="Zoom In"
             >
               <ZoomIn className="h-4 w-4" />
@@ -216,18 +221,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       </div>
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 bg-gray-200 overflow-auto p-4 flex items-center justify-center">
-          <PropertiesPanel
-            selectedObject={selectedObject}
-            onObjectUpdate={handleObjectUpdate}
-            layers={layers}
-            activeLayerId={activeLayerId}
-            onLayerSelect={handleLayerSelect}
-            onLayerVisibilityToggle={handleLayerVisibilityToggle}
-            onLayerAdd={handleLayerAdd}
-            onLayerDelete={handleLayerDelete}
-            onLayerMoveUp={handleLayerMoveUp}
-            onLayerMoveDown={handleLayerMoveDown}
-          />
           <Canvas
             activeTool={activeTool}
             zoom={zoom}
@@ -238,6 +231,27 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             setActiveLayerId={setActiveLayerId}
           />
         </div>
+        <PropertiesPanel
+          selectedObject={selectedObject}
+          onObjectUpdate={(property, value) => {
+            if (!selectedObject) return;
+            
+            selectedObject.set({ [property]: value });
+            setSelectedObject(selectedObject);
+            
+            if (selectedObject.canvas) {
+              selectedObject.canvas.renderAll();
+            }
+          }}
+          layers={layers}
+          activeLayerId={activeLayerId}
+          onLayerSelect={handleLayerSelect}
+          onLayerVisibilityToggle={handleLayerVisibilityToggle}
+          onLayerAdd={handleLayerAdd}
+          onLayerDelete={handleLayerDelete}
+          onLayerMoveUp={handleLayerMoveUp}
+          onLayerMoveDown={handleLayerMoveDown}
+        />
       </div>
     </div>
   );

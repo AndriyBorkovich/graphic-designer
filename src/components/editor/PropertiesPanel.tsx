@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { ColorPickerTab } from "./ColorPickerTab";
 import { ToolPropertiesTab } from "./ToolPropertiesTab";
 import { LayersTab } from "./LayersTab";
-import { Toolbox } from "./Toolbox";
 import {
   Settings,
   Palette,
@@ -76,40 +76,65 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   };
 
   return (
-    <div className="flex h-full">
-      <Toolbox activeTool={activeTab} setActiveTool={setActiveTab} />
+    <div className="w-56 bg-gray-100 border-l border-gray-300 flex flex-col">
+      <div className="border-b border-gray-300 p-2 flex justify-around">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className={activeTab === "properties" ? "bg-gray-200" : ""} 
+          onClick={() => setActiveTab("properties")}
+        >
+          <SlidersHorizontal className="h-5 w-5" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className={activeTab === "colors" ? "bg-gray-200" : ""} 
+          onClick={() => setActiveTab("colors")}
+        >
+          <Palette className="h-5 w-5" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className={activeTab === "layers" ? "bg-gray-200" : ""} 
+          onClick={() => setActiveTab("layers")}
+        >
+          <Layers className="h-5 w-5" />
+        </Button>
+      </div>
+      
+      <div className="overflow-y-auto flex-grow p-4">
+        {/* Layers Tab */}
+        {activeTab === "layers" && (
+          <div>
+            <h3 className="font-medium text-lg mb-4">Layers</h3>
+            <LayersTab
+              layers={layers}
+              activeLayerId={activeLayerId}
+              onLayerSelect={onLayerSelect}
+              onLayerVisibilityToggle={onLayerVisibilityToggle}
+              onLayerAdd={onLayerAdd}
+              onLayerDelete={onLayerDelete}
+              onLayerMoveUp={onLayerMoveUp}
+              onLayerMoveDown={onLayerMoveDown}
+            />
+          </div>
+        )}
 
-      {/* Layers Tab */}
-      {activeTab === "layers" && (
-        <div className="h-[calc(100vh-4rem)]">
-          <h3 className="font-medium text-lg mb-4">Layers</h3>
-          <LayersTab
-            layers={layers}
-            activeLayerId={activeLayerId}
-            onLayerSelect={onLayerSelect}
-            onLayerVisibilityToggle={onLayerVisibilityToggle}
-            onLayerAdd={onLayerAdd}
-            onLayerDelete={onLayerDelete}
-            onLayerMoveUp={onLayerMoveUp}
-            onLayerMoveDown={onLayerMoveDown}
-          />
-        </div>
-      )}
+        {/* Colors Tab */}
+        {activeTab === "colors" && (
+          <div className="space-y-4">
+            <h3 className="font-medium text-lg mb-4">Colors</h3>
+            <ColorPickerTab
+              selectedObject={selectedObject}
+              onColorChange={handleColorChange}
+            />
+          </div>
+        )}
 
-      {/* Colors Tab */}
-      {activeTab === "colors" && (
-        <div className="space-y-4">
-          <h3 className="font-medium text-lg mb-4">Colors</h3>
-          <ColorPickerTab
-            selectedObject={selectedObject}
-            onColorChange={handleColorChange}
-          />
-        </div>
-      )}
-
-      {/* tool properties tab */}
-      {activeTab === "properties" && (
-        <div className="p-4 w-56 bg-gray-100">
+        {/* tool properties tab */}
+        {activeTab === "properties" && (
           <ToolPropertiesTab
             brushSize={brushSize}
             opacity={opacity}
@@ -118,8 +143,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             onOpacityChange={handleOpacityChange}
             onBlendModeChange={handleBlendModeChange}
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

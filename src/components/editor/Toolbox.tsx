@@ -54,7 +54,7 @@ export const Toolbox: React.FC<ToolboxProps> = ({
                 className={`w-10 h-10 rounded ${
                   activeTool === tool.name
                     ? "bg-blue-600 hover:bg-blue-700"
-                    : "hover:bg-gray-800"
+                    : "hover:bg-gray-700"
                 }`}
                 onClick={() => setActiveTool(tool.name)}
               >
