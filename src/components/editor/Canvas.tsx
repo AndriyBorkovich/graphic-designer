@@ -2,14 +2,35 @@
 import React, { useEffect, useRef, useState } from "react";
 import { fabric } from "fabric";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
+
+interface Layer {
+  id: string;
+  name: string;
+  type: 'background' | 'shape' | 'text' | 'image' | 'adjustment';
+  visible: boolean;
+  object: fabric.Object;
+}
 
 interface CanvasProps {
   activeTool: string;
   zoom: number;
   setSelectedObject: (object: any) => void;
+  setLayers: (layers: Layer[]) => void;
+  layers: Layer[];
+  activeLayerId: string | null;
+  setActiveLayerId: (layerId: string | null) => void;
 }
 
-export const Canvas: React.FC<CanvasProps> = ({ activeTool, zoom, setSelectedObject }) => {
+export const Canvas: React.FC<CanvasProps> = ({ 
+  activeTool, 
+  zoom, 
+  setSelectedObject,
+  setLayers,
+  layers,
+  activeLayerId,
+  setActiveLayerId
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const isDrawing = useRef(false);
@@ -30,14 +51,33 @@ export const Canvas: React.FC<CanvasProps> = ({ activeTool, zoom, setSelectedObj
     // Selection event
     fabricCanvas.on("selection:created", (e) => {
       setSelectedObject(e.selected ? e.selected[0] : null);
+      
+      // Find the layer that corresponds to the selected object
+      if (e.selected && e.selected[0]) {
+        const selectedObject = e.selected[0];
+        const layer = layers.find(layer => layer.object === selectedObject);
+        if (layer) {
+          setActiveLayerId(layer.id);
+        }
+      }
     });
     
     fabricCanvas.on("selection:updated", (e) => {
       setSelectedObject(e.selected ? e.selected[0] : null);
+      
+      // Find the layer that corresponds to the selected object
+      if (e.selected && e.selected[0]) {
+        const selectedObject = e.selected[0];
+        const layer = layers.find(layer => layer.object === selectedObject);
+        if (layer) {
+          setActiveLayerId(layer.id);
+        }
+      }
     });
     
     fabricCanvas.on("selection:cleared", () => {
       setSelectedObject(null);
+      setActiveLayerId(null);
     });
     
     // Object modified event
@@ -47,10 +87,92 @@ export const Canvas: React.FC<CanvasProps> = ({ activeTool, zoom, setSelectedObj
       }
     });
     
+    // Object added event
+    fabricCanvas.on("object:added", (e) => {
+      if (!e.target) return;
+      
+      // Check if this is a programmatic addition from loading layers
+      if ((e.target as any)._skipLayerCreation) {
+        delete (e.target as any)._skipLayerCreation;
+        return;
+      }
+      
+      const newObject = e.target;
+      
+      // Create a new layer for the object
+      const layerId = uuidv4();
+      let layerType: Layer['type'] = 'shape';
+      let layerName = "New Shape";
+      
+      if (newObject instanceof fabric.Rect) {
+        layerType = 'shape';
+        layerName = "Rectangle";
+      } else if (newObject instanceof fabric.Circle) {
+        layerType = 'shape';
+        layerName = "Circle";
+      } else if (newObject instanceof fabric.Textbox) {
+        layerType = 'text';
+        layerName = "Text";
+      } else if (newObject instanceof fabric.Image) {
+        layerType = 'image';
+        layerName = "Image";
+      } else if (newObject instanceof fabric.Path) {
+        layerType = 'shape';
+        layerName = "Path";
+      }
+      
+      const newLayer = {
+        id: layerId,
+        name: layerName,
+        type: layerType,
+        visible: true,
+        object: newObject,
+      };
+      
+      setLayers(prevLayers => [...prevLayers, newLayer]);
+      setActiveLayerId(layerId);
+    });
+    
+    // Add background layer
+    const backgroundLayer = {
+      id: uuidv4(),
+      name: "Background",
+      type: "background" as const,
+      visible: true,
+      object: fabricCanvas.backgroundImage || fabricCanvas,
+    };
+    
+    setLayers([backgroundLayer]);
+    
     return () => {
       fabricCanvas.dispose();
     };
-  }, [setSelectedObject]);
+  }, [setSelectedObject, setLayers, setActiveLayerId]);
+  
+  // Effect for layers changing
+  useEffect(() => {
+    if (!canvas) return;
+    
+    // Update visibility of objects based on layer visibility
+    layers.forEach(layer => {
+      if (layer.type !== 'background' && layer.object) {
+        layer.object.visible = layer.visible;
+      }
+    });
+    
+    canvas.renderAll();
+  }, [layers, canvas]);
+  
+  // Effect for active layer changing
+  useEffect(() => {
+    if (!canvas || !activeLayerId) return;
+    
+    const activeLayer = layers.find(layer => layer.id === activeLayerId);
+    if (activeLayer && activeLayer.type !== 'background') {
+      canvas.setActiveObject(activeLayer.object);
+      canvas.renderAll();
+    }
+  }, [activeLayerId, layers, canvas]);
   
   // Handle tool changes
   useEffect(() => {
