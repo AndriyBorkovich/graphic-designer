@@ -189,20 +189,20 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
         ) : (
           <>
             <div
-              className={`flex-1 px-2 py-1 text-center text-sm cursor-pointer transition-colors ${
+              className={`flex-1 px-2 py-1 text-center text-sm rounded-sm cursor-pointer transition-colors ${
                 colorTarget === "fill"
-                  ? "bg-primary text-white"
-                  : "bg-gray-200 text-gray-700"
+                  ? "bg-[#4318D1] text-white"
+                  : "bg-[#3A3A3A] text-gray-300"
               }`}
               onClick={() => handleColorTargetChange("fill")}
             >
               Fill
             </div>
             <div
-              className={`flex-1 px-2 py-1 text-center text-sm cursor-pointer transition-colors ${
+              className={`flex-1 px-2 py-1 text-center text-sm  rounded-sm cursor-pointer transition-colors ${
                 colorTarget === "stroke"
-                  ? "bg-primary text-white"
-                  : "bg-gray-200 text-gray-700"
+                  ? "bg-[#4318D1] text-white"
+                  : "bg-[#3A3A3A] text-gray-300"
               }`}
               onClick={() => handleColorTargetChange("stroke")}
             >
@@ -214,7 +214,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
 
       {/* Color tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-2">
+        <TabsList className="w-full grid grid-cols-2 bg-[#3A3A3A]">
           <TabsTrigger value="picker" className="flex items-center gap-1">
             <Palette className="h-4 w-4" />
             <span>Picker</span>
@@ -250,10 +250,10 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
           <div className="space-y-3 mt-4">
             <div>
               <div className="flex justify-between items-center">
-                <Label htmlFor="red" className="text-xs">
+                <Label htmlFor="red" className="text-xs text-white">
                   Red
                 </Label>
-                <span className="text-xs">
+                <span className="text-xs text-white">
                   {Math.round((red / 255) * 100)}%
                 </span>
               </div>
@@ -264,16 +264,16 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
                 step={1}
                 value={[red]}
                 onValueChange={handleRedChange}
-                className="my-1"
+                className="my-1 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&_[role=slider]]:border-none [&_[role=slider]]:bg-white [&_[role=slider]]:shadow-md [&_[role=slider]]:shadow-black/50 [&_[role=slider]]:hover:bg-white/90 [&_[role=slider]]:focus:bg-white/90 [&_[role=track]]:h-1 [&_[role=track]]:bg-red-500/30 [&_[role=range]]:bg-red-500"
               />
             </div>
 
             <div>
               <div className="flex justify-between items-center">
-                <Label htmlFor="green" className="text-xs">
+                <Label htmlFor="green" className="text-xs text-white">
                   Green
                 </Label>
-                <span className="text-xs">
+                <span className="text-xs text-white">
                   {Math.round((green / 255) * 100)}%
                 </span>
               </div>
@@ -284,16 +284,16 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
                 step={1}
                 value={[green]}
                 onValueChange={handleGreenChange}
-                className="my-1"
+                className="my-1 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&_[role=slider]]:border-none [&_[role=slider]]:bg-white [&_[role=slider]]:shadow-md [&_[role=slider]]:shadow-black/50 [&_[role=slider]]:hover:bg-white/90 [&_[role=slider]]:focus:bg-white/90 [&_[role=track]]:h-1 [&_[role=track]]:bg-green-500/30 [&_[role=range]]:bg-green-500"
               />
             </div>
 
             <div>
               <div className="flex justify-between items-center">
-                <Label htmlFor="blue" className="text-xs">
+                <Label htmlFor="blue" className="text-xs text-white">
                   Blue
                 </Label>
-                <span className="text-xs">
+                <span className="text-xs text-white">
                   {Math.round((blue / 255) * 100)}%
                 </span>
               </div>
@@ -304,7 +304,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
                 step={1}
                 value={[blue]}
                 onValueChange={handleBlueChange}
-                className="my-1"
+                className="my-1 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&_[role=slider]]:border-none [&_[role=slider]]:bg-white [&_[role=slider]]:shadow-md [&_[role=slider]]:shadow-black/50 [&_[role=slider]]:hover:bg-white/90 [&_[role=slider]]:focus:bg-white/90 [&_[role=track]]:h-1 [&_[role=track]]:bg-blue-500/30 [&_[role=range]]:bg-blue-500"
               />
             </div>
           </div>
@@ -313,7 +313,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
 
       {/* Hex input */}
       <div>
-        <Label htmlFor="hex-color" className="text-xs">
+        <Label htmlFor="hex-color" className="text-xs text-white">
           Hex Color
         </Label>
         <Input
@@ -327,7 +327,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
 
       {/* Recent colors */}
       <div>
-        <Label className="text-xs block mb-2">Recent Colors</Label>
+        <Label className="text-xs block mb-2 text-white">Recent Colors</Label>
         <div className="flex space-x-2">
           {recentColors.map((color, index) => (
             <div
