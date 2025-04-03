@@ -185,7 +185,7 @@ const ProjectsPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#2A2A2A] text-white">
       <Navbar />
       <main className="flex-grow flex">
         <div className="w-16 shrink-0">
@@ -193,25 +193,29 @@ const ProjectsPage = () => {
         </div>
         <div className="flex-grow container mx-auto py-8 px-4 md:px-6">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold">My projects</h1>
+            <h1 className="text-2xl font-bold text-white">My projects</h1>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="bg-gray-800 hover:bg-gray-700 text-white border-gray-700">
                   <Plus className="mr-2 h-4 w-4" />
-                  New Project
+                  New project
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="bg-[#2A2A2A] border-gray-800">
                 <DialogHeader>
-                  <DialogTitle>Create new project</DialogTitle>
-                  <DialogDescription>
+                  <DialogTitle className="text-white">
+                    Create new project
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-400">
                     Create a new design project to work on
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Project name</Label>
+                    <Label htmlFor="name" className="text-gray-200">
+                      Project name
+                    </Label>
                     <Input
                       id="name"
                       placeholder="My Awesome Project"
@@ -223,6 +227,7 @@ const ProjectsPage = () => {
                         }
                       }}
                       className={cn(
+                        "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500",
                         errors.name &&
                           "border-red-500 focus-visible:ring-red-500"
                       )}
@@ -232,7 +237,9 @@ const ProjectsPage = () => {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="description">Description (optional)</Label>
+                    <Label htmlFor="description" className="text-gray-200">
+                      Description (optional)
+                    </Label>
                     <Textarea
                       id="description"
                       placeholder="Project description..."
@@ -248,6 +255,7 @@ const ProjectsPage = () => {
                         }
                       }}
                       className={cn(
+                        "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500",
                         errors.description &&
                           "border-red-500 focus-visible:ring-red-500"
                       )}
@@ -257,12 +265,12 @@ const ProjectsPage = () => {
                         {errors.description}
                       </p>
                     )}
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-400">
                       {newProject.description.length}/200 characters
                     </p>
                   </div>
                   <Button onClick={handleCreateProject} className="w-full">
-                    Create Project
+                    Create
                   </Button>
                 </div>
               </DialogContent>
@@ -271,28 +279,33 @@ const ProjectsPage = () => {
 
           {loading ? (
             <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400"></div>
             </div>
           ) : projects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project) => (
-                <Card key={project.id} className="overflow-hidden">
+                <Card
+                  key={project.id}
+                  className="group overflow-hidden bg-gray-900/50 border-gray-800 hover:border-gray-700 transition-colors"
+                >
                   <div
-                    className="h-40 bg-gray-100 flex items-center justify-center cursor-pointer"
+                    className="h-40 bg-gray-800/50 flex items-center justify-center cursor-pointer group-hover:bg-gray-800/80 transition-colors"
                     onClick={() => handleOpenEditor(project)}
                   >
-                    <FileImage className="h-16 w-16 text-gray-400" />
+                    <FileImage className="h-16 w-16 text-gray-500 group-hover:text-gray-400 transition-colors" />
                   </div>
                   <CardHeader className="pb-2">
-                    <CardTitle>{project.name}</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-gray-100 group-hover:text-white transition-colors">
+                      {project.name}
+                    </CardTitle>
+                    <CardDescription className="text-gray-500 group-hover:text-gray-400 transition-colors">
                       {new Date(project.created_at).toLocaleDateString()} •{" "}
                       {project.file_size}
                     </CardDescription>
                   </CardHeader>
                   {project.description && (
                     <CardContent className="pb-2">
-                      <p className="text-sm text-gray-500 line-clamp-2">
+                      <p className="text-sm text-gray-500 group-hover:text-gray-400 line-clamp-2 transition-colors">
                         {project.description}
                       </p>
                     </CardContent>
@@ -301,14 +314,15 @@ const ProjectsPage = () => {
                     <Button
                       variant="outline"
                       onClick={() => handleOpenEditor(project)}
+                      className="bg-transparent border-gray-800 text-gray-300 hover:bg-gray-800 hover:text-white hover:border-gray-700 transition-all"
                     >
-                      Open Project
+                      Open
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDeleteProject(project.id)}
-                      className="text-gray-500 hover:text-red-500"
+                      className="text-gray-500 hover:text-red-400 hover:bg-red-500/10"
                     >
                       <Trash2 className="h-5 w-5" />
                     </Button>
@@ -318,8 +332,8 @@ const ProjectsPage = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <FileImage className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">
+              <FileImage className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-200">
                 No projects yet
               </h3>
               <p className="text-gray-500 mt-1">
