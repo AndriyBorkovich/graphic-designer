@@ -219,7 +219,7 @@ export const Canvas: React.FC<CanvasProps> = ({
           name: "Background",
           type: "background" as const,
           visible: true,
-          object: fabricCanvas.backgroundImage || fabricCanvas,
+          object: fabricCanvas as unknown as fabric.Object, // Cast the canvas to fabric.Object
         } as Layer;
 
         setLayers([backgroundLayer]);
@@ -489,14 +489,14 @@ export const Canvas: React.FC<CanvasProps> = ({
   return (
     <div
       ref={canvasContainerRef}
-      className="w-full h-full flex items-center justify-center"
+      className="flex items-center justify-center"
       style={{
-        backgroundColor: "white",
+        backgroundColor: "brown",
         overflow: "auto",
         position: "relative",
       }}
     >
-      <canvas ref={canvasRef} className="border border-gray-300" />
+      <canvas ref={canvasRef} />
       {!canvas && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-70">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mb-3"></div>

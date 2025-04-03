@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -11,35 +10,54 @@ interface ColorPickerTabProps {
   onColorChange?: (property: string, color: string) => void;
 }
 
-export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({ 
-  selectedObject, 
-  onColorChange 
+export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
+  selectedObject,
+  onColorChange,
 }) => {
   const [activeTab, setActiveTab] = useState<string>("picker");
   const [currentColor, setCurrentColor] = useState<string>("#00FF00");
   const [colorTarget, setColorTarget] = useState<string>("fill");
-  
+
   // RGB values
   const [red, setRed] = useState<number>(0);
   const [green, setGreen] = useState<number>(255);
   const [blue, setBlue] = useState<number>(0);
-  
+
   // Recent colors array
   const [recentColors, setRecentColors] = useState<string[]>([
-    "#5500ff", "#ff5500", "#00ff55", "#4400ff", "#ffff00"
+    "#5500ff",
+    "#ff5500",
+    "#00ff55",
+    "#4400ff",
+    "#ffff00",
   ]);
 
   // Initialize color values based on selected object
   useEffect(() => {
     if (selectedObject) {
-      const targetColor = colorTarget === "fill" 
-        ? selectedObject.fill || "#000000" 
-        : selectedObject.stroke || "#000000";
-        
+      // Check if the selected object is the background
+      const isBackground =
+        selectedObject.canvas && selectedObject === selectedObject.canvas;
+
+      let targetColor = "#000000";
+
+      if (isBackground) {
+        // For background, get the canvas background color
+        targetColor = selectedObject.backgroundColor || "#ffffff";
+      } else {
+        // For regular objects, get fill or stroke color
+        targetColor =
+          colorTarget === "fill"
+            ? selectedObject.fill || "#000000"
+            : selectedObject.stroke || "#000000";
+      }
+
       setCurrentColor(targetColor);
-      
+
       // Parse the hex color to RGB
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(targetColor);
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
+        targetColor
+      );
       if (result) {
         setRed(parseInt(result[1], 16));
         setGreen(parseInt(result[2], 16));
@@ -56,7 +74,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
   // Handle direct hex input change
   const handleHexChange = (value: string) => {
     setCurrentColor(value);
-    
+
     // Parse the hex color to update RGB sliders
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(value);
     if (result) {
@@ -64,7 +82,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
       setGreen(parseInt(result[2], 16));
       setBlue(parseInt(result[3], 16));
     }
-    
+
     if (onColorChange) {
       onColorChange(colorTarget, value);
     }
@@ -76,29 +94,29 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
     setRed(newRed);
     const newHex = rgbToHex(newRed, green, blue);
     setCurrentColor(newHex);
-    
+
     if (onColorChange) {
       onColorChange(colorTarget, newHex);
     }
   };
-  
+
   const handleGreenChange = (value: number[]) => {
     const newGreen = value[0];
     setGreen(newGreen);
     const newHex = rgbToHex(red, newGreen, blue);
     setCurrentColor(newHex);
-    
+
     if (onColorChange) {
       onColorChange(colorTarget, newHex);
     }
   };
-  
+
   const handleBlueChange = (value: number[]) => {
     const newBlue = value[0];
     setBlue(newBlue);
     const newHex = rgbToHex(red, green, newBlue);
     setCurrentColor(newHex);
-    
+
     if (onColorChange) {
       onColorChange(colorTarget, newHex);
     }
@@ -108,7 +126,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
   const handleColorPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = e.target.value;
     setCurrentColor(newColor);
-    
+
     // Parse the hex color to update RGB sliders
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(newColor);
     if (result) {
@@ -116,7 +134,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
       setGreen(parseInt(result[2], 16));
       setBlue(parseInt(result[3], 16));
     }
-    
+
     if (onColorChange) {
       onColorChange(colorTarget, newColor);
     }
@@ -133,7 +151,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
   // Handle selecting a recent color
   const selectRecentColor = (color: string) => {
     setCurrentColor(color);
-    
+
     // Parse the hex color to update RGB sliders
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
     if (result) {
@@ -141,7 +159,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
       setGreen(parseInt(result[2], 16));
       setBlue(parseInt(result[3], 16));
     }
-    
+
     if (onColorChange) {
       onColorChange(colorTarget, color);
     }
@@ -152,26 +170,48 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
     setColorTarget(target);
   };
 
+  // Check if the selected object is the background
+  const isBackground =
+    selectedObject &&
+    selectedObject.canvas &&
+    selectedObject === selectedObject.canvas;
+
   return (
     <div className="space-y-4">
-      <h3 className="font-medium mb-2">Color Selection</h3>
-      
+      <h3 className="font-medium mb-2 text-white">Color Selection</h3>
+
       {/* Color target selection */}
       <div className="flex mb-3">
-        <div 
-          className={`flex-1 px-2 py-1 text-center text-sm cursor-pointer transition-colors ${colorTarget === 'fill' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'}`}
-          onClick={() => handleColorTargetChange('fill')}
-        >
-          Fill
-        </div>
-        <div 
-          className={`flex-1 px-2 py-1 text-center text-sm cursor-pointer transition-colors ${colorTarget === 'stroke' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'}`}
-          onClick={() => handleColorTargetChange('stroke')}
-        >
-          Stroke
-        </div>
+        {isBackground ? (
+          <div className="flex-1 px-2 py-1 text-center text-sm cursor-pointer transition-colors bg-primary text-white">
+            Background
+          </div>
+        ) : (
+          <>
+            <div
+              className={`flex-1 px-2 py-1 text-center text-sm cursor-pointer transition-colors ${
+                colorTarget === "fill"
+                  ? "bg-primary text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+              onClick={() => handleColorTargetChange("fill")}
+            >
+              Fill
+            </div>
+            <div
+              className={`flex-1 px-2 py-1 text-center text-sm cursor-pointer transition-colors ${
+                colorTarget === "stroke"
+                  ? "bg-primary text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+              onClick={() => handleColorTargetChange("stroke")}
+            >
+              Stroke
+            </div>
+          </>
+        )}
       </div>
-      
+
       {/* Color tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full grid grid-cols-2">
@@ -184,12 +224,12 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
             <span>Sliders</span>
           </TabsTrigger>
         </TabsList>
-        
+
         {/* Color Picker */}
         <TabsContent value="picker" className="pt-4">
           <div className="relative w-full aspect-square max-h-48 bg-gray-800 rounded overflow-hidden">
-            <input 
-              type="color" 
+            <input
+              type="color"
               value={currentColor}
               onChange={handleColorPickerChange}
               onBlur={() => addToRecentColors(currentColor)}
@@ -197,21 +237,25 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
             />
           </div>
         </TabsContent>
-        
+
         {/* RGB Sliders */}
         <TabsContent value="sliders" className="pt-4">
           <div className="w-full aspect-square max-h-48 bg-gray-800 mb-3 rounded flex items-center justify-center">
-            <div 
-              style={{ backgroundColor: currentColor }} 
+            <div
+              style={{ backgroundColor: currentColor }}
               className="w-5/6 h-5/6 rounded-sm"
             />
           </div>
-          
+
           <div className="space-y-3 mt-4">
             <div>
               <div className="flex justify-between items-center">
-                <Label htmlFor="red" className="text-xs">Red</Label>
-                <span className="text-xs">{Math.round((red / 255) * 100)}%</span>
+                <Label htmlFor="red" className="text-xs">
+                  Red
+                </Label>
+                <span className="text-xs">
+                  {Math.round((red / 255) * 100)}%
+                </span>
               </div>
               <Slider
                 id="red"
@@ -223,11 +267,15 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
                 className="my-1"
               />
             </div>
-            
+
             <div>
               <div className="flex justify-between items-center">
-                <Label htmlFor="green" className="text-xs">Green</Label>
-                <span className="text-xs">{Math.round((green / 255) * 100)}%</span>
+                <Label htmlFor="green" className="text-xs">
+                  Green
+                </Label>
+                <span className="text-xs">
+                  {Math.round((green / 255) * 100)}%
+                </span>
               </div>
               <Slider
                 id="green"
@@ -239,11 +287,15 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
                 className="my-1"
               />
             </div>
-            
+
             <div>
               <div className="flex justify-between items-center">
-                <Label htmlFor="blue" className="text-xs">Blue</Label>
-                <span className="text-xs">{Math.round((blue / 255) * 100)}%</span>
+                <Label htmlFor="blue" className="text-xs">
+                  Blue
+                </Label>
+                <span className="text-xs">
+                  {Math.round((blue / 255) * 100)}%
+                </span>
               </div>
               <Slider
                 id="blue"
@@ -258,19 +310,21 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
           </div>
         </TabsContent>
       </Tabs>
-      
+
       {/* Hex input */}
       <div>
-        <Label htmlFor="hex-color" className="text-xs">Hex Color</Label>
-        <Input 
-          id="hex-color" 
+        <Label htmlFor="hex-color" className="text-xs">
+          Hex Color
+        </Label>
+        <Input
+          id="hex-color"
           value={currentColor}
           onChange={(e) => handleHexChange(e.target.value)}
           onBlur={() => addToRecentColors(currentColor)}
           className="h-8"
         />
       </div>
-      
+
       {/* Recent colors */}
       <div>
         <Label className="text-xs block mb-2">Recent Colors</Label>

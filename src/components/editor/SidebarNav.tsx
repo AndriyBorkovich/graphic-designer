@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -6,7 +5,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CubeIcon, PaletteIcon, Layers } from "lucide-react";
+import { ClubIcon, PaletteIcon, Layers } from "lucide-react";
 
 interface SidebarNavProps {
   activeTab: string;
@@ -18,13 +17,13 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   setActiveTab,
 }) => {
   const tabs = [
-    { id: "tools", icon: CubeIcon, label: "Tools" },
+    { id: "tools", icon: ClubIcon, label: "Tools" },
     { id: "colors", icon: PaletteIcon, label: "Colors" },
     { id: "layers", icon: Layers, label: "Layers" },
   ];
 
   return (
-    <div className="flex flex-col items-center gap-2 bg-gray-900 p-2 h-full">
+    <div className="flex flex-col items-center gap-2 bg-[#2A2A2A] p-2 h-full">
       {tabs.map((tab) => (
         <Tooltip key={tab.id}>
           <TooltipTrigger asChild>
@@ -33,8 +32,8 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
               size="icon"
               className={`w-12 h-12 ${
                 activeTab === tab.id
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-400 hover:text-white hover:bg-gray-800/60"
+                  ? "bg-[#4318D1] text-white hover:bg-[#4318D1]/60"
+                  : "text-gray-400 hover:text-white hover:bg-[#4318D1]/60"
               }`}
               onClick={() => setActiveTab(tab.id)}
             >

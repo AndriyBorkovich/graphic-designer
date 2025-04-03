@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,7 +46,7 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
                 size="icon"
                 className={`w-14 h-14 rounded-md ${
                   activeTool === tool.name
-                    ? "bg-indigo-600"
+                    ? "bg-[#4318D1] hover:bg-gray-900"
                     : "bg-gray-800 hover:bg-gray-700"
                 }`}
                 onClick={() => setActiveTool(tool.name)}

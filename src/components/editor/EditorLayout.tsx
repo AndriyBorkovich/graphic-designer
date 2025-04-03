@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Canvas } from "./Canvas";
-import { SidePanel } from "./SidePanel";
 import { SidebarNav } from "./SidebarNav";
 import { ToolsTab } from "./ToolsTab";
 import { ColorPickerTab } from "./ColorPickerTab";
@@ -65,12 +64,26 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const handleObjectUpdate = (property: string, value: any) => {
     if (!selectedObject) return;
 
-    // Update the selected object in the canvas
-    selectedObject.set({ [property]: value });
-    setSelectedObject(selectedObject);
+    // Check if the selected object is the background layer
+    const isBackground =
+      selectedObject ===
+      layers.find((layer) => layer.type === "background")?.object;
 
-    if (selectedObject.canvas) {
-      selectedObject.canvas.renderAll();
+    if (isBackground && property === "fill") {
+      // For background color changes, update the canvas background color
+      if (selectedObject.canvas) {
+        selectedObject.canvas.setBackgroundColor(value, () => {
+          selectedObject.canvas.renderAll();
+        });
+      }
+    } else {
+      // For regular objects, update the property directly
+      selectedObject.set({ [property]: value });
+      setSelectedObject(selectedObject);
+
+      if (selectedObject.canvas) {
+        selectedObject.canvas.renderAll();
+      }
     }
   };
 
@@ -196,18 +209,18 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-auto">
       <div className="flex">
         <div className="bg-gray-900 border-r border-gray-800">
           <SidebarNav activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
-        <div className="bg-gray-900 w-64 p-4 border-r border-gray-800">
+        <div className="bg-[#2A2A2A] w-64 p-4 border-r border-gray-800">
           {renderActiveTabContent()}
         </div>
       </div>
 
       <div className="flex flex-col flex-1 h-full">
-        <div className="flex justify-between items-center p-2 border-b bg-gray-900 text-white">
+        <div className="flex justify-between items-center p-2 border-b bg-[#2A2A2A] text-white">
           <div className="flex items-center gap-2 ml-auto">
             <Button variant="ghost" size="icon" title="Undo">
               <Undo className="h-5 w-5" />
@@ -265,7 +278,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </div>
         </div>
         <div className="flex-1 overflow-hidden bg-gray-800">
-          <div className="h-full w-full flex items-center justify-center">
+          <div className="h-auto w-auto flex items-center justify-center">
             <Canvas
               activeTool={activeTool}
               zoom={zoom}

@@ -60,10 +60,9 @@ export const LayersTab: React.FC<LayersTabProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col text-white">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1 text-sm font-medium">
-          <Layers className="h-4 w-4" />
           <span>Layers</span>
         </div>
         <div className="flex gap-1">
@@ -79,7 +78,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-red-400 hover:text-red-500 hover:bg-red-50"
+            className="h-7 w-7 text-red-400 hover:text-red-500 hover:hover:bg-[#4318D1]/60"
             disabled={activeLayerId === null}
             onClick={() => activeLayerId && onLayerDelete(activeLayerId)}
             title="Delete Layer"
@@ -96,8 +95,8 @@ export const LayersTab: React.FC<LayersTabProps> = ({
               <div
                 key={layer.id}
                 className={cn(
-                  "flex items-center gap-2 p-2 rounded cursor-pointer text-sm hover:bg-gray-100",
-                  activeLayerId === layer.id && "bg-blue-50 hover:bg-blue-100"
+                  "flex items-center gap-2 p-2 rounded cursor-pointer text-sm hover:hover:bg-[#4318D1]",
+                  activeLayerId === layer.id && "bg-[#4318D1] hover:bg-blue-100"
                 )}
                 onClick={() => onLayerSelect(layer.id)}
               >
@@ -131,7 +130,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                     className="h-5 w-5 p-0"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onLayerMoveUp(layer.id);
+                      onLayerMoveDown(layer.id);
                     }}
                     title="Move Up"
                   >
@@ -143,7 +142,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                     className="h-5 w-5 p-0"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onLayerMoveDown(layer.id);
+                      onLayerMoveUp(layer.id);
                     }}
                     title="Move Down"
                   >
