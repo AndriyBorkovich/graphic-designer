@@ -319,8 +319,32 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
         <Input
           id="hex-color"
           value={currentColor}
-          onChange={(e) => handleHexChange(e.target.value)}
-          onBlur={() => addToRecentColors(currentColor)}
+          disabled={true}
+          onChange={(e) => {
+            const value = e.target.value;
+            // Allow empty input or # prefix
+            if (value === "" || value === "#") {
+              handleHexChange(value);
+              return;
+            }
+            // Validate hex color format
+            const hexRegex = /^#?([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/;
+            if (hexRegex.test(value)) {
+              // Add # prefix if missing
+              const normalizedValue = value.startsWith("#")
+                ? value
+                : `#${value}`;
+              handleHexChange(normalizedValue);
+            }
+          }}
+          onBlur={() => {
+            // Ensure color is valid before adding to recent colors
+            const hexRegex = /^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/;
+            if (hexRegex.test(currentColor)) {
+              addToRecentColors(currentColor);
+            }
+          }}
+          placeholder="#000000"
           className="h-8"
         />
       </div>
