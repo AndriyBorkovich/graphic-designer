@@ -8,7 +8,7 @@ const EditorPage: React.FC = () => {
   const [activeTool, setActiveTool] = useState<string>("select");
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-900">
       <Navbar />
       <main className="flex-grow flex h-[calc(100vh-8rem)]">
         <EditorLayout activeTool={activeTool} setActiveTool={setActiveTool} />

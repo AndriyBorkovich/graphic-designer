@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { Canvas } from "./Canvas";
 import { SidePanel } from "./SidePanel";
+import { SidebarNav } from "./SidebarNav";
+import { ToolsTab } from "./ToolsTab";
+import { ColorPickerTab } from "./ColorPickerTab";
+import { LayersTab } from "./LayersTab";
 import { Undo, Redo, ZoomIn, ZoomOut, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -27,6 +31,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [selectedObject, setSelectedObject] = useState<any>(null);
   const [layers, setLayers] = useState<Layer[]>([]);
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("tools");
 
   // Handle zoom in function
   const handleZoomIn = () => {
@@ -156,25 +161,54 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
+  // Render active tab content
+  const renderActiveTabContent = () => {
+    switch (activeTab) {
+      case "tools":
+        return (
+          <ToolsTab
+            activeTool={activeTool}
+            setActiveTool={setActiveTool}
+          />
+        );
+      case "colors":
+        return (
+          <ColorPickerTab
+            selectedObject={selectedObject}
+            onColorChange={(property, color) => handleObjectUpdate(property, color)}
+          />
+        );
+      case "layers":
+        return (
+          <LayersTab
+            layers={layers}
+            activeLayerId={activeLayerId}
+            onLayerSelect={handleLayerSelect}
+            onLayerVisibilityToggle={handleLayerVisibilityToggle}
+            onLayerAdd={handleLayerAdd}
+            onLayerDelete={handleLayerDelete}
+            onLayerMoveUp={handleLayerMoveUp}
+            onLayerMoveDown={handleLayerMoveDown}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="flex h-screen">
-      <SidePanel
-        activeTool={activeTool}
-        setActiveTool={setActiveTool}
-        selectedObject={selectedObject}
-        onObjectUpdate={handleObjectUpdate}
-        layers={layers}
-        activeLayerId={activeLayerId}
-        onLayerSelect={handleLayerSelect}
-        onLayerVisibilityToggle={handleLayerVisibilityToggle}
-        onLayerAdd={handleLayerAdd}
-        onLayerDelete={handleLayerDelete}
-        onLayerMoveUp={handleLayerMoveUp}
-        onLayerMoveDown={handleLayerMoveDown}
-      />
+      <div className="flex">
+        <div className="bg-gray-900 border-r border-gray-800">
+          <SidebarNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        </div>
+        <div className="bg-gray-900 w-64 p-4 border-r border-gray-800">
+          {renderActiveTabContent()}
+        </div>
+      </div>
 
       <div className="flex flex-col flex-1 h-full">
-        <div className="flex justify-between items-center p-2 border-b bg-gray-50">
+        <div className="flex justify-between items-center p-2 border-b bg-gray-900 text-white">
           <div className="flex items-center gap-2 ml-auto">
             <Button variant="ghost" size="icon" title="Undo">
               <Undo className="h-5 w-5" />
@@ -182,7 +216,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <Button variant="ghost" size="icon" title="Redo">
               <Redo className="h-5 w-5" />
             </Button>
-            <div className="flex items-center border rounded-md">
+            <div className="flex items-center border rounded-md border-gray-700">
               <Button
                 variant="ghost"
                 size="icon"
@@ -206,7 +240,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className="text-red-500 hover:bg-red-50"
+              className="text-red-500 hover:bg-red-900/20"
               onClick={() => {
                 if (selectedObject && selectedObject.canvas) {
                   const canvas = selectedObject.canvas;
@@ -231,8 +265,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             </Button>
           </div>
         </div>
-        <div className="flex-1 overflow-hidden">
-          <div className="h-full w-full flex items-center justify-center bg-gray-200">
+        <div className="flex-1 overflow-hidden bg-gray-800">
+          <div className="h-full w-full flex items-center justify-center">
             <Canvas
               activeTool={activeTool}
               zoom={zoom}
