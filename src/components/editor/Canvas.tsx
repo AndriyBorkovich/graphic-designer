@@ -19,6 +19,7 @@ interface CanvasProps {
   layers: Layer[];
   activeLayerId: string | null;
   setActiveLayerId: (layerId: string | null) => void;
+  onCanvasInitialized?: (canvas: fabric.Canvas) => void;
 }
 
 // Default canvas dimensions
@@ -33,9 +34,11 @@ export const Canvas: React.FC<CanvasProps> = ({
   layers,
   activeLayerId,
   setActiveLayerId,
+  onCanvasInitialized,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const isDrawing = useRef(false);
   const [dimensions, setDimensions] = useState({
@@ -47,23 +50,33 @@ export const Canvas: React.FC<CanvasProps> = ({
   useEffect(() => {
     if (!canvasRef.current || !canvasContainerRef.current) return;
 
-    let fabricCanvas: fabric.Canvas | null = null;
+    // Clean up any existing canvas instance
+    if (fabricCanvasRef.current) {
+      fabricCanvasRef.current.dispose();
+      fabricCanvasRef.current = null;
+    }
 
     try {
       // Initialize with fixed dimensions first
-      fabricCanvas = new fabric.Canvas(canvasRef.current, {
+      const newCanvas = new fabric.Canvas(canvasRef.current, {
         width: DEFAULT_WIDTH,
         height: DEFAULT_HEIGHT,
         backgroundColor: "#ffffff",
         preserveObjectStacking: true,
       });
 
-      // Set canvas reference
-      setCanvas(fabricCanvas);
+      // Store canvas reference in both state and ref
+      fabricCanvasRef.current = newCanvas;
+      setCanvas(newCanvas);
+
+      // Notify parent component about canvas initialization
+      if (onCanvasInitialized) {
+        onCanvasInitialized(newCanvas);
+      }
 
       // Then adjust to container size
       const adjustCanvasSize = () => {
-        if (!canvasContainerRef.current || !fabricCanvas) return;
+        if (!canvasContainerRef.current || !newCanvas) return;
 
         try {
           // Get the container dimensions
@@ -73,21 +86,17 @@ export const Canvas: React.FC<CanvasProps> = ({
           // Apply zoom level
           const zoomRatio = zoom / 100;
 
-          // Set the canvas dimensions to match container - safely check if method exists
-          if (typeof fabricCanvas.setDimensions === "function") {
-            fabricCanvas.setDimensions(
-              {
-                width: containerWidth,
-                height: containerHeight,
-              },
-              { cssOnly: false }
-            );
-          }
+          // Set the canvas dimensions to match container
+          newCanvas.setDimensions(
+            {
+              width: containerWidth,
+              height: containerHeight,
+            },
+            { cssOnly: false }
+          );
 
-          // Safely set zoom
-          if (typeof fabricCanvas.setZoom === "function") {
-            fabricCanvas.setZoom(zoomRatio);
-          }
+          // Set zoom
+          newCanvas.setZoom(zoomRatio);
 
           // Update state
           setDimensions({
@@ -95,24 +104,13 @@ export const Canvas: React.FC<CanvasProps> = ({
             height: containerHeight,
           });
 
-          // Safely center objects
-          try {
-            if (
-              fabricCanvas.getObjects &&
-              fabricCanvas.getObjects().length > 0
-            ) {
-              if (typeof fabricCanvas.centerObject === "function") {
-                fabricCanvas.centerObject(fabricCanvas.getObjects()[0]);
-              }
-            }
-          } catch (error) {
-            console.warn("Could not center objects:", error);
+          // Center objects if any exist
+          if (newCanvas.getObjects().length > 0) {
+            newCanvas.centerObject(newCanvas.getObjects()[0]);
           }
 
-          // Safely render
-          if (typeof fabricCanvas.renderAll === "function") {
-            fabricCanvas.renderAll();
-          }
+          // Render
+          newCanvas.requestRenderAll();
         } catch (error) {
           console.error("Error adjusting canvas size:", error);
         }
@@ -122,10 +120,10 @@ export const Canvas: React.FC<CanvasProps> = ({
       adjustCanvasSize();
       window.addEventListener("resize", adjustCanvasSize);
 
-      // Add event handlers only if canvas was created successfully
-      if (fabricCanvas) {
+      // Set up event handlers
+      if (newCanvas) {
         // Selection event
-        fabricCanvas.on("selection:created", (e) => {
+        newCanvas.on("selection:created", (e) => {
           setSelectedObject(e.selected ? e.selected[0] : null);
 
           // Find the layer that corresponds to the selected object
@@ -140,7 +138,7 @@ export const Canvas: React.FC<CanvasProps> = ({
           }
         });
 
-        fabricCanvas.on("selection:updated", (e) => {
+        newCanvas.on("selection:updated", (e) => {
           setSelectedObject(e.selected ? e.selected[0] : null);
 
           // Find the layer that corresponds to the selected object
@@ -155,20 +153,20 @@ export const Canvas: React.FC<CanvasProps> = ({
           }
         });
 
-        fabricCanvas.on("selection:cleared", () => {
+        newCanvas.on("selection:cleared", () => {
           setSelectedObject(null);
           setActiveLayerId(null);
         });
 
         // Object modified event
-        fabricCanvas.on("object:modified", (e) => {
+        newCanvas.on("object:modified", (e) => {
           if (e.target) {
             setSelectedObject(e.target);
           }
         });
 
         // Object added event
-        fabricCanvas.on("object:added", (e) => {
+        newCanvas.on("object:added", (e) => {
           if (!e.target) return;
 
           // Check if this is a programmatic addition from loading layers
@@ -212,34 +210,58 @@ export const Canvas: React.FC<CanvasProps> = ({
           setLayers((prevLayers: Layer[]) => [...prevLayers, newLayer]);
           setActiveLayerId(layerId);
         });
-
-        // Add background layer only if canvas was created successfully
-        const backgroundLayer = {
-          id: uuidv4(),
-          name: "Background",
-          type: "background" as const,
-          visible: true,
-          object: fabricCanvas as unknown as fabric.Object, // Cast the canvas to fabric.Object
-        } as Layer;
-
-        setLayers([backgroundLayer]);
       }
 
+      // Add background layer
+      const backgroundLayer = {
+        id: uuidv4(),
+        name: "Background",
+        type: "background" as const,
+        visible: true,
+        object: newCanvas as unknown as fabric.Object,
+      } as Layer;
+
+      setLayers([backgroundLayer]);
+
+      // Cleanup function
       return () => {
         window.removeEventListener("resize", adjustCanvasSize);
-        if (fabricCanvas) {
-          fabricCanvas.dispose();
+        if (fabricCanvasRef.current) {
+          fabricCanvasRef.current.dispose();
+          fabricCanvasRef.current = null;
         }
       };
     } catch (error) {
       console.error("Error initializing canvas:", error);
       return () => {
-        if (fabricCanvas) {
-          fabricCanvas.dispose();
+        if (fabricCanvasRef.current) {
+          fabricCanvasRef.current.dispose();
+          fabricCanvasRef.current = null;
         }
       };
     }
-  }, [zoom, setSelectedObject, setLayers, setActiveLayerId]);
+  }, []); // Empty dependency array to initialize only once
+
+  // Effect for zoom changes
+  useEffect(() => {
+    const currentCanvas = fabricCanvasRef.current;
+    if (!currentCanvas || !canvasContainerRef.current) return;
+
+    try {
+      const containerWidth = canvasContainerRef.current.clientWidth;
+      const containerHeight = canvasContainerRef.current.clientHeight;
+      const zoomRatio = zoom / 100;
+
+      currentCanvas.setDimensions({
+        width: containerWidth,
+        height: containerHeight,
+      });
+      currentCanvas.setZoom(zoomRatio);
+      currentCanvas.requestRenderAll();
+    } catch (error) {
+      console.error("Error updating canvas zoom:", error);
+    }
+  }, [zoom]);
 
   // Effect for layers changing
   useEffect(() => {
@@ -317,39 +339,6 @@ export const Canvas: React.FC<CanvasProps> = ({
       canvas.off("mouse:up");
     };
   }, [activeTool, canvas]);
-
-  // Update zoom
-  useEffect(() => {
-    if (!canvas || !canvasContainerRef.current) return;
-
-    try {
-      // Get current container dimensions
-      const containerWidth = canvasContainerRef.current.clientWidth;
-      const containerHeight = canvasContainerRef.current.clientHeight;
-
-      const zoomRatio = zoom / 100;
-
-      // Safely set dimensions - first check if the method exists
-      if (typeof canvas.setDimensions === "function") {
-        canvas.setDimensions({
-          width: containerWidth,
-          height: containerHeight,
-        });
-      }
-
-      // Safely set zoom if the method exists
-      if (typeof canvas.setZoom === "function") {
-        canvas.setZoom(zoomRatio);
-      }
-
-      // Safely render if the method exists
-      if (typeof canvas.renderAll === "function") {
-        canvas.renderAll();
-      }
-    } catch (error) {
-      console.error("Error updating canvas zoom:", error);
-    }
-  }, [zoom, canvas]);
 
   // Rectangle Drawing
   const startAddingRect = (e: fabric.IEvent<MouseEvent>) => {
@@ -489,9 +478,9 @@ export const Canvas: React.FC<CanvasProps> = ({
   return (
     <div
       ref={canvasContainerRef}
-      className="flex items-center justify-center"
+      className="flex items-center justify-center w-full h-full"
       style={{
-        backgroundColor: "brown",
+        backgroundColor: "white",
         overflow: "auto",
         position: "relative",
       }}

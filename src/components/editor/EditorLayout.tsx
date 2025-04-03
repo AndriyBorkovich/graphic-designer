@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, useBeforeUnload } from "react-router-dom";
 import { Canvas } from "./Canvas";
 import { SidebarNav } from "./SidebarNav";
 import { ToolsTab } from "./ToolsTab";
@@ -9,6 +9,10 @@ import { Undo, Redo, ZoomIn, ZoomOut, Trash2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { fabric } from "fabric";
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { v4 as uuidv4 } from "uuid";
 
 interface Layer {
   id: string;
@@ -18,11 +22,19 @@ interface Layer {
   object: fabric.Object;
 }
 
+interface FabricObject extends fabric.Object {
+  id?: string;
+  name?: string;
+  type?: string;
+  visible?: boolean;
+}
+
 interface EditorLayoutProps {
   activeTool?: string;
   setActiveTool: (tool: string) => void;
   projectId?: string;
   projectName?: string;
+  initialCanvasData?: string | null;
 }
 
 export const EditorLayout: React.FC<EditorLayoutProps> = ({
@@ -30,13 +42,38 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   setActiveTool,
   projectId,
   projectName = "Untitled Project",
+  initialCanvasData,
 }) => {
   const [zoom, setZoom] = useState<number>(100);
   const [selectedObject, setSelectedObject] = useState<any>(null);
   const [layers, setLayers] = useState<Layer[]>([]);
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("tools");
+  const [fabricCanvas, setFabricCanvas] = useState<fabric.Canvas | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+
+  // Track unsaved changes
+  const markUnsavedChanges = useCallback(() => {
+    setHasUnsavedChanges(true);
+  }, []);
+
+  // Warn about unsaved changes when leaving
+  useBeforeUnload(
+    useCallback(
+      (event) => {
+        if (hasUnsavedChanges) {
+          event.preventDefault();
+          return (event.returnValue =
+            "You have unsaved changes. Are you sure you want to leave?");
+        }
+      },
+      [hasUnsavedChanges]
+    )
+  );
 
   // Handle zoom in function
   const handleZoomIn = () => {
@@ -66,10 +103,119 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
-  // Handle save function
-  const handleSave = () => {
-    toast.success(`Project "${projectName}" saved successfully`);
+  // Handle canvas initialization
+  const handleCanvasInitialized = (canvas: fabric.Canvas) => {
+    setFabricCanvas(canvas);
   };
+
+  // Load initial canvas data when canvas is initialized
+  useEffect(() => {
+    if (!fabricCanvas || !initialCanvasData) return;
+
+    try {
+      const canvasState = JSON.parse(initialCanvasData);
+      fabricCanvas.loadFromJSON(canvasState, () => {
+        fabricCanvas.renderAll();
+
+        // Update layers based on loaded objects
+        const loadedObjects = fabricCanvas.getObjects() as FabricObject[];
+        const newLayers: Layer[] = loadedObjects.map((obj) => ({
+          id: obj.id || uuidv4(),
+          name: obj.name || "Imported Object",
+          type: (obj.type as Layer["type"]) || "shape",
+          visible: obj.visible !== false,
+          object: obj,
+        }));
+
+        // Add background layer if not present
+        if (!newLayers.find((layer) => layer.type === "background")) {
+          newLayers.unshift({
+            id: uuidv4(),
+            name: "Background",
+            type: "background",
+            visible: true,
+            object: fabricCanvas as unknown as fabric.Object,
+          });
+        }
+
+        setLayers(newLayers);
+        toast.success("Project loaded successfully");
+      });
+    } catch (error) {
+      console.error("Error loading canvas state:", error);
+      toast.error("Failed to load project data");
+    }
+  }, [fabricCanvas, initialCanvasData]);
+
+  // Save project data to Supabase
+  const handleSave = async () => {
+    if (!user || !projectId) {
+      toast.error("Unable to save: No active project or user session");
+      return;
+    }
+
+    if (!fabricCanvas) {
+      toast.error("Canvas not initialized");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      // Get canvas state directly from the Fabric.js instance
+      const canvasState = JSON.stringify(
+        fabricCanvas.toJSON(["id", "name", "type", "visible"])
+      );
+      const currentTime = new Date().toISOString();
+
+      console.log("Data to update", canvasState, currentTime, currentTime);
+
+      // Save to Supabase
+      const { error: updateError } = await supabase
+        .from("projects")
+        .update({
+          canvas_data: canvasState,
+          updated_at: currentTime,
+          last_modified_by: user.id,
+        })
+        .eq("id", projectId)
+        .eq("user_id", user.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Update state
+      setHasUnsavedChanges(false);
+      setLastSavedAt(new Date());
+      toast.success(`Project "${projectName}" saved successfully`);
+    } catch (error: any) {
+      console.error("Error saving project:", error);
+
+      if (error.code === "PGRST116") {
+        toast.error("You don't have permission to save this project");
+      } else if (error.code === "23505") {
+        toast.error("A project with this name already exists");
+      } else if (error.message?.includes("network")) {
+        toast.error("Network error. Please check your connection");
+      } else {
+        toast.error("Failed to save project. Please try again");
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Auto-save functionality (optional)
+  useEffect(() => {
+    if (hasUnsavedChanges) {
+      const timeoutId = setTimeout(() => {
+        handleSave();
+      }, 30000); // Auto-save after 30 seconds of no changes
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [hasUnsavedChanges]);
 
   // Object update handler
   const handleObjectUpdate = (property: string, value: any) => {
@@ -96,6 +242,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         selectedObject.canvas.renderAll();
       }
     }
+
+    markUnsavedChanges();
   };
 
   // Layer management functions
@@ -149,6 +297,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
 
     toast.success("Layer deleted");
+
+    markUnsavedChanges();
   };
 
   const handleLayerMoveUp = (layerId: string) => {
@@ -219,17 +369,26 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
+  // Navigation with unsaved changes check
   const navigateToProjects = () => {
-    navigate('/projects');
+    if (hasUnsavedChanges) {
+      const shouldLeave = window.confirm(
+        "You have unsaved changes. Are you sure you want to leave?"
+      );
+      if (!shouldLeave) {
+        return;
+      }
+    }
+    navigate("/projects");
   };
 
   return (
     <div className="flex h-auto">
       <div className="flex">
         <div className="bg-gray-900 border-r border-gray-800">
-          <SidebarNav 
-            activeTab={activeTab} 
-            setActiveTab={setActiveTab} 
+          <SidebarNav
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
             onProjectsClick={navigateToProjects}
           />
         </div>
@@ -240,9 +399,29 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
       <div className="flex flex-col flex-1 h-full">
         <div className="flex justify-between items-center p-2 border-b bg-[#2A2A2A] text-white">
-          <div className="ml-2 font-medium truncate">{projectName}</div>
+          <div className="ml-2 font-medium truncate">
+            {projectName}
+            {hasUnsavedChanges && (
+              <span className="ml-2 text-yellow-400">•</span>
+            )}
+            {lastSavedAt && (
+              <span className="ml-2 text-sm text-gray-400">
+                Last saved: {lastSavedAt.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" title="Save Project" onClick={handleSave}>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Save Project"
+              onClick={handleSave}
+              disabled={isSaving || !hasUnsavedChanges}
+              className={cn(
+                isSaving && "animate-pulse",
+                !hasUnsavedChanges && "opacity-50"
+              )}
+            >
               <Save className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="icon" title="Undo">
@@ -310,6 +489,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               setLayers={setLayers}
               activeLayerId={activeLayerId}
               setActiveLayerId={setActiveLayerId}
+              onCanvasInitialized={handleCanvasInitialized}
             />
           </div>
         </div>

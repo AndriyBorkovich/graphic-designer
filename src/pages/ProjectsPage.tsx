@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, FileImage, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface Project {
   id: string;
@@ -48,6 +49,10 @@ const ProjectsPage = () => {
   const [newProject, setNewProject] = useState({
     name: "",
     file_type: "graphic",
+    description: "",
+  });
+  const [errors, setErrors] = useState({
+    name: "",
     description: "",
   });
 
@@ -88,44 +93,65 @@ const ProjectsPage = () => {
     }
   };
 
-  const handleCreateProject = async () => {
-    if (!user) return;
+  const validateInputs = () => {
+    const newErrors = {
+      name: "",
+      description: "",
+    };
 
-    if (!newProject.name) {
-      toast.error("Please enter a project name");
-      return;
+    // Validate project name
+    if (!newProject.name.trim()) {
+      newErrors.name = "Project name is required";
+    } else if (newProject.name.length < 3) {
+      newErrors.name = "Project name must be at least 3 characters";
+    } else if (newProject.name.length > 50) {
+      newErrors.name = "Project name must be less than 50 characters";
     }
 
-    try {
-      const projectData = {
-        user_id: user.id,
-        name: newProject.name,
-        file_type: newProject.file_type,
-        description: newProject.description || null,
-        file_size: "1920x1080",
-      };
+    // Validate description (optional but with length limit)
+    if (newProject.description && newProject.description.length > 200) {
+      newErrors.description = "Description must be less than 200 characters";
+    }
 
-      // Using 'any' to bypass TypeScript errors with Supabase tables
-      const { error } = await supabase
-        .from("projects" as any)
-        .insert(projectData as any);
+    setErrors(newErrors);
+    return !newErrors.name && !newErrors.description;
+  };
 
-      if (error) {
-        throw error;
+  const handleCreateProject = async () => {
+    if (validateInputs()) {
+      if (!user) return;
+
+      try {
+        const projectData = {
+          user_id: user.id,
+          name: newProject.name,
+          file_type: newProject.file_type,
+          description: newProject.description || null,
+          file_size: "1920x1080",
+        };
+
+        // Using 'any' to bypass TypeScript errors with Supabase tables
+        const { error } = await supabase
+          .from("projects" as any)
+          .insert(projectData as any);
+
+        if (error) {
+          throw error;
+        }
+
+        setDialogOpen(false);
+        toast.success("Project created successfully");
+        setNewProject({
+          name: "",
+          file_type: "graphic",
+          description: "",
+        });
+
+        fetchProjects();
+      } catch (error) {
+        console.error("Error creating project:", error);
+        toast.error("Failed to create project");
       }
-
-      setDialogOpen(false);
-      toast.success("Project created successfully");
-      setNewProject({
-        name: "",
-        file_type: "graphic",
-        description: "",
-      });
-
-      fetchProjects();
-    } catch (error) {
-      console.error("Error creating project:", error);
-      toast.error("Failed to create project");
     }
   };
 
@@ -167,7 +193,7 @@ const ProjectsPage = () => {
         </div>
         <div className="flex-grow container mx-auto py-8 px-4 md:px-6">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold">My Projects</h1>
+            <h1 className="text-2xl font-bold">My projects</h1>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
@@ -178,22 +204,32 @@ const ProjectsPage = () => {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Create New Project</DialogTitle>
+                  <DialogTitle>Create new project</DialogTitle>
                   <DialogDescription>
                     Create a new design project to work on
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Project Name</Label>
+                    <Label htmlFor="name">Project name</Label>
                     <Input
                       id="name"
                       placeholder="My Awesome Project"
                       value={newProject.name}
-                      onChange={(e) =>
-                        setNewProject({ ...newProject, name: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setNewProject({ ...newProject, name: e.target.value });
+                        if (errors.name) {
+                          setErrors({ ...errors, name: "" });
+                        }
+                      }}
+                      className={cn(
+                        errors.name &&
+                          "border-red-500 focus-visible:ring-red-500"
+                      )}
                     />
+                    {errors.name && (
+                      <p className="text-sm text-red-500">{errors.name}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="description">Description (optional)</Label>
@@ -201,13 +237,29 @@ const ProjectsPage = () => {
                       id="description"
                       placeholder="Project description..."
                       value={newProject.description}
-                      onChange={(e) =>
+                      maxLength={200}
+                      onChange={(e) => {
                         setNewProject({
                           ...newProject,
                           description: e.target.value,
-                        })
-                      }
+                        });
+                        if (errors.description) {
+                          setErrors({ ...errors, description: "" });
+                        }
+                      }}
+                      className={cn(
+                        errors.description &&
+                          "border-red-500 focus-visible:ring-red-500"
+                      )}
                     />
+                    {errors.description && (
+                      <p className="text-sm text-red-500">
+                        {errors.description}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-500">
+                      {newProject.description.length}/200 characters
+                    </p>
                   </div>
                   <Button onClick={handleCreateProject} className="w-full">
                     Create Project
@@ -277,7 +329,6 @@ const ProjectsPage = () => {
           )}
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

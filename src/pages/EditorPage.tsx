@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { EditorLayout } from "@/components/editor/EditorLayout";
@@ -13,6 +12,8 @@ const EditorPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [projectName, setProjectName] = useState<string>("Untitled Project");
+  const [canvasData, setCanvasData] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
@@ -28,9 +29,10 @@ const EditorPage: React.FC = () => {
 
   const fetchProjectDetails = async () => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase
         .from("projects")
-        .select("name")
+        .select("name, canvas_data")
         .eq("id", projectId)
         .eq("user_id", user?.id)
         .single();
@@ -43,23 +45,41 @@ const EditorPage: React.FC = () => {
 
       if (data) {
         setProjectName(data.name);
+        setCanvasData(data.canvas_data);
         document.title = `${data.name} | Editor`;
       }
     } catch (error: any) {
       console.error("Error fetching project details:", error);
       toast.error("Failed to load project details");
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow flex items-center justify-center">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mb-3"></div>
+            <p className="text-sm text-gray-600">Loading project...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow flex h-[calc(100vh-4rem)]">
-        <EditorLayout 
-          activeTool={activeTool} 
+        <EditorLayout
+          activeTool={activeTool}
           setActiveTool={setActiveTool}
           projectId={projectId}
           projectName={projectName}
+          initialCanvasData={canvasData}
         />
       </main>
     </div>
