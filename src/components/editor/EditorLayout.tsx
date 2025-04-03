@@ -157,7 +157,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-auto">
       <SidePanel
         activeTool={activeTool}
         setActiveTool={setActiveTool}

@@ -72,7 +72,7 @@ export const SidePanel: React.FC<PropertiesPanelProps> = ({
 
   return (
     <div className="w-56 bg-gray-900 text-white flex flex-col">
-      <div className="border-b border-gray-700 p-2 flex justify-around">
+      <div className="border-b border-gray-700 p-2 flex flex-col justify-around">
         <Button
           variant="ghost"
           size="icon"
