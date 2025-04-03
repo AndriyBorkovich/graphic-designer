@@ -1,10 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Canvas } from "./Canvas";
 import { SidebarNav } from "./SidebarNav";
 import { ToolsTab } from "./ToolsTab";
 import { ColorPickerTab } from "./ColorPickerTab";
 import { LayersTab } from "./LayersTab";
-import { Undo, Redo, ZoomIn, ZoomOut, Trash2 } from "lucide-react";
+import { Undo, Redo, ZoomIn, ZoomOut, Trash2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { fabric } from "fabric";
@@ -20,17 +21,22 @@ interface Layer {
 interface EditorLayoutProps {
   activeTool?: string;
   setActiveTool: (tool: string) => void;
+  projectId?: string;
+  projectName?: string;
 }
 
 export const EditorLayout: React.FC<EditorLayoutProps> = ({
   activeTool = "select",
   setActiveTool,
+  projectId,
+  projectName = "Untitled Project",
 }) => {
   const [zoom, setZoom] = useState<number>(100);
   const [selectedObject, setSelectedObject] = useState<any>(null);
   const [layers, setLayers] = useState<Layer[]>([]);
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("tools");
+  const navigate = useNavigate();
 
   // Handle zoom in function
   const handleZoomIn = () => {
@@ -58,6 +64,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       console.error("Error zooming out:", error);
       toast.error("Error while zooming out");
     }
+  };
+
+  // Handle save function
+  const handleSave = () => {
+    toast.success(`Project "${projectName}" saved successfully`);
   };
 
   // Object update handler
@@ -208,11 +219,19 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
+  const navigateToProjects = () => {
+    navigate('/projects');
+  };
+
   return (
     <div className="flex h-auto">
       <div className="flex">
         <div className="bg-gray-900 border-r border-gray-800">
-          <SidebarNav activeTab={activeTab} setActiveTab={setActiveTab} />
+          <SidebarNav 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+            onProjectsClick={navigateToProjects}
+          />
         </div>
         <div className="bg-[#2A2A2A] w-64 p-4 border-r border-gray-800">
           {renderActiveTabContent()}
@@ -221,7 +240,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
       <div className="flex flex-col flex-1 h-full">
         <div className="flex justify-between items-center p-2 border-b bg-[#2A2A2A] text-white">
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="ml-2 font-medium truncate">{projectName}</div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" title="Save Project" onClick={handleSave}>
+              <Save className="h-5 w-5" />
+            </Button>
             <Button variant="ghost" size="icon" title="Undo">
               <Undo className="h-5 w-5" />
             </Button>

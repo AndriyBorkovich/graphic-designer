@@ -154,8 +154,8 @@ const ProjectsPage = () => {
   };
 
   const handleOpenEditor = (project: Project) => {
-    // Navigate to the editor page
-    navigate("/editor");
+    // Navigate to the editor page with the project ID
+    navigate(`/editor/${project.id}`);
   };
 
   return (

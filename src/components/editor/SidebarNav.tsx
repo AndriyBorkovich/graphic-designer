@@ -6,29 +6,28 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ClubIcon, PaletteIcon, Layers } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ClubIcon, PaletteIcon, Layers, LayoutGrid } from "lucide-react";
 
 interface SidebarNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onProjectsClick?: () => void;
 }
 
 export const SidebarNav: React.FC<SidebarNavProps> = ({
   activeTab,
   setActiveTab,
+  onProjectsClick,
 }) => {
-  const navigate = useNavigate();
-
   const tabs = [
     { id: "tools", icon: ClubIcon, label: "Tools" },
     { id: "colors", icon: PaletteIcon, label: "Colors" },
     { id: "layers", icon: Layers, label: "Layers" },
     { 
       id: "projects", 
-      icon: Layers, // Re-using Layers icon as a placeholder for projects
+      icon: LayoutGrid,
       label: "Projects",
-      action: () => navigate('/projects')
+      action: onProjectsClick
     },
   ];
 
