@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,40 +35,24 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
     { name: "eraser", icon: Eraser, tooltip: "Eraser" },
   ];
 
-  const getButtonStyles = (toolName: string) => {
-    if (isDarkMode) {
-      return `w-10 h-10 rounded ${
-        activeTool === toolName
-          ? "bg-indigo-600"
-          : "bg-gray-800 hover:bg-gray-700"
-      }`;
-    } else {
-      return `w-10 h-10 rounded ${
-        activeTool === toolName ? "bg-blue-600 text-white" : "bg-gray-200"
-      }`;
-    }
-  };
-
   return (
     <div>
-      <h3
-        className={`font-medium ${
-          isDarkMode ? "text-sm text-white" : "text-lg"
-        } mb-4`}
-      >
-        Tools
-      </h3>
-      <div className="flex flex-wrap gap-2">
+      <h3 className="font-medium text-lg mb-4 text-white">Tools</h3>
+      <div className="grid grid-cols-3 gap-2">
         {tools.map((tool) => (
           <Tooltip key={tool.name}>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className={getButtonStyles(tool.name)}
+                className={`w-14 h-14 rounded-md ${
+                  activeTool === tool.name
+                    ? "bg-indigo-600"
+                    : "bg-gray-800 hover:bg-gray-700"
+                }`}
                 onClick={() => setActiveTool(tool.name)}
               >
-                <tool.icon className="w-5 h-5" />
+                <tool.icon className="w-6 h-6 text-white" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">{tool.tooltip}</TooltipContent>
