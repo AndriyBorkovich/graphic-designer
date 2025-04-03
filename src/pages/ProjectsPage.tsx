@@ -189,7 +189,11 @@ const ProjectsPage = () => {
       <Navbar />
       <main className="flex-grow flex">
         <div className="w-16 shrink-0">
-          <SidebarNav activeTab={activeTab} setActiveTab={setActiveTab} />
+          <SidebarNav
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            hideGeneralTabs={true}
+          />
         </div>
         <div className="flex-grow container mx-auto py-8 px-4 md:px-6">
           <div className="flex justify-between items-center mb-8">

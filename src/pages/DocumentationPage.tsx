@@ -82,7 +82,11 @@ const DocumentationPage: React.FC = () => {
       <main className="flex-grow flex h-[calc(100vh-4rem)]">
         {/* Main sidebar with icons */}
         <div className="w-[68px] bg-[#2A2A2A] border-r border-[#3A3A3A]">
-          <SidebarNav activeTab="documentation" setActiveTab={() => {}} />
+          <SidebarNav
+            activeTab="documentation"
+            setActiveTab={() => {}}
+            hideGeneralTabs={true}
+          />
         </div>
 
         {/* Documentation sections navigation */}

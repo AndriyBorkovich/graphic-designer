@@ -71,9 +71,9 @@ const EditorPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col w-auto">
       <Navbar />
-      <main className="flex-grow flex h-[calc(100vh-4rem)]">
+      <main className="flex-grow flex h-[calc(100vh-4rem)] w-auto">
         <EditorLayout
           activeTool={activeTool}
           setActiveTool={setActiveTool}

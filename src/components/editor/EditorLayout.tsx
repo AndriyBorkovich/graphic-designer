@@ -383,7 +383,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   };
 
   return (
-    <div className="flex h-auto">
+    <div className="flex h-auto w-auto">
       <div className="flex">
         <div className="bg-gray-900 border-r border-gray-800">
           <SidebarNav
@@ -397,8 +397,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 h-full">
-        <div className="flex justify-between items-center p-2 border-b bg-[#2A2A2A] text-white">
+      <div className="flex flex-col flex-1 h-full w-auto">
+        <div className="flex justify-between items-center p-2 border-b bg-[#2A2A2A] text-white w-full">
           <div className="ml-2 font-medium truncate">
             {projectName}
             {hasUnsavedChanges && (
@@ -473,7 +473,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 }
               }}
               disabled={!selectedObject}
-              title="Delete Selected"
+              title="Delete selected"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
