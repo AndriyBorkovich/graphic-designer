@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -6,7 +5,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ClubIcon, PaletteIcon, Layers, LayoutGrid, BookIcon } from "lucide-react";
+import {
+  ClubIcon,
+  PaletteIcon,
+  Layers,
+  LayoutGrid,
+  BookIcon,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface SidebarNavProps {
@@ -28,22 +33,22 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
     { id: "tools", icon: ClubIcon, label: "Tools" },
     { id: "colors", icon: PaletteIcon, label: "Colors" },
     { id: "layers", icon: Layers, label: "Layers" },
-    { 
-      id: "projects", 
+    {
+      id: "projects",
       icon: LayoutGrid,
       label: "Projects",
-      action: onProjectsClick || (() => navigate("/projects"))
+      action: onProjectsClick || (() => navigate("/projects")),
     },
     {
       id: "documentation",
       icon: BookIcon,
       label: "Documentation",
-      action: () => navigate("/documentation")
-    }
+      action: () => navigate("/documentation"),
+    },
   ];
 
   return (
-    <div className={`flex flex-col items-center gap-2 bg-[#2A2A2A] p-2 ${className || "h-full"}`}>
+    <div className={`flex flex-col items-center gap-2 bg-[#2A2A2A] p-2 h-full`}>
       {tabs.map((tab) => (
         <Tooltip key={tab.id}>
           <TooltipTrigger asChild>
@@ -55,7 +60,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                   ? "bg-[#4318D1] text-white hover:bg-[#4318D1]/60"
                   : "text-gray-400 hover:text-white hover:bg-[#4318D1]/60"
               }`}
-              onClick={() => tab.action ? tab.action() : setActiveTab(tab.id)}
+              onClick={() => (tab.action ? tab.action() : setActiveTab(tab.id))}
             >
               <tab.icon className="w-6 h-6" />
             </Button>
