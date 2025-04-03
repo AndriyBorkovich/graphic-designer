@@ -28,23 +28,24 @@ const EditorPage: React.FC = () => {
 
   const fetchProjectDetails = async () => {
     try {
-      // Using 'any' to bypass TypeScript errors with Supabase tables
       const { data, error } = await supabase
-        .from("projects" as any)
+        .from("projects")
         .select("name")
         .eq("id", projectId)
         .eq("user_id", user?.id)
         .single();
 
       if (error) {
-        throw error;
+        console.error("Error fetching project details:", error);
+        toast.error("Failed to load project details");
+        return;
       }
 
       if (data) {
         setProjectName(data.name);
         document.title = `${data.name} | Editor`;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching project details:", error);
       toast.error("Failed to load project details");
     }

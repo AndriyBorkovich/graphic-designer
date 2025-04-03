@@ -6,19 +6,24 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ClubIcon, PaletteIcon, Layers, LayoutGrid } from "lucide-react";
+import { ClubIcon, PaletteIcon, Layers, LayoutGrid, BookIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface SidebarNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onProjectsClick?: () => void;
+  className?: string;
 }
 
 export const SidebarNav: React.FC<SidebarNavProps> = ({
   activeTab,
   setActiveTab,
   onProjectsClick,
+  className,
 }) => {
+  const navigate = useNavigate();
+
   const tabs = [
     { id: "tools", icon: ClubIcon, label: "Tools" },
     { id: "colors", icon: PaletteIcon, label: "Colors" },
@@ -27,12 +32,18 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
       id: "projects", 
       icon: LayoutGrid,
       label: "Projects",
-      action: onProjectsClick
+      action: onProjectsClick || (() => navigate("/projects"))
     },
+    {
+      id: "documentation",
+      icon: BookIcon,
+      label: "Documentation",
+      action: () => navigate("/documentation")
+    }
   ];
 
   return (
-    <div className="flex flex-col items-center gap-2 bg-[#2A2A2A] p-2 h-full">
+    <div className={`flex flex-col items-center gap-2 bg-[#2A2A2A] p-2 ${className || "h-full"}`}>
       {tabs.map((tab) => (
         <Tooltip key={tab.id}>
           <TooltipTrigger asChild>
