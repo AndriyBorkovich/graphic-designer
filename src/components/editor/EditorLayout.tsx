@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useBeforeUnload } from "react-router-dom";
 import { Canvas } from "./Canvas";
@@ -84,11 +83,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     setHasUnsavedChanges(true);
   }, []);
 
-  // Use our new canvas history hook
+  // Use our canvas history hook
   const {
     handleUndo,
     handleRedo,
     initializeHistory,
+    saveState,
     isUndoDisabled,
     isRedoDisabled
   } = useCanvasHistory(fabricCanvas, setLayers, markUnsavedChanges);
@@ -135,52 +135,88 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
-  // Initialize canvas with improved state tracking
+  // Initialize canvas with history tracking
   const handleCanvasInitialized = (canvas: fabric.Canvas) => {
     setFabricCanvas(canvas);
     
     // Initialize canvas history
     initializeHistory(canvas);
+    
+    // If there's initial data, load it after initialization
+    if (initialCanvasData) {
+      try {
+        const canvasState = JSON.parse(initialCanvasData);
+        canvas.loadFromJSON(canvasState, () => {
+          canvas.renderAll();
+
+          // Update layers based on loaded objects
+          const loadedObjects = canvas.getObjects() as FabricObject[];
+          const newLayers: Layer[] = loadedObjects.map((obj) => ({
+            id: obj.id || uuidv4(),
+            name: obj.name || "Imported Object",
+            type: (obj.type as Layer["type"]) || "shape",
+            visible: obj.visible !== false,
+            object: obj,
+          }));
+
+          // Add background layer if not present
+          if (!newLayers.find((layer) => layer.type === "background")) {
+            newLayers.unshift({
+              id: uuidv4(),
+              name: "Background",
+              type: "background",
+              visible: true,
+              object: canvas as unknown as fabric.Object,
+            });
+          }
+
+          setLayers(newLayers);
+          
+          // Initialize history after loading the initial state
+          initializeHistory(canvas);
+          
+          toast.success("Project loaded successfully");
+        });
+      } catch (error) {
+        console.error("Error loading canvas state:", error);
+        toast.error("Failed to load project data");
+      }
+    }
   };
 
-  // Load initial canvas data when canvas is initialized
+  // Remove loading initial canvas data from useEffect
   useEffect(() => {
-    if (!fabricCanvas || !initialCanvasData) return;
+    // Set up keyboard shortcuts
+    const handleKeyboard = (e: KeyboardEvent) => {
+      // Ignore keyboard shortcuts when typing in input fields
+      if (e.target instanceof HTMLInputElement || 
+          e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
 
-    try {
-      const canvasState = JSON.parse(initialCanvasData);
-      fabricCanvas.loadFromJSON(canvasState, () => {
-        fabricCanvas.renderAll();
+      // Undo: Ctrl+Z or Cmd+Z
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+      
+      // Redo: Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y or Cmd+Y
+      if (((e.ctrlKey || e.metaKey) && e.key === "z" && e.shiftKey) || 
+          ((e.ctrlKey || e.metaKey) && e.key === "y")) {
+        e.preventDefault();
+        handleRedo();
+      }
 
-        // Update layers based on loaded objects
-        const loadedObjects = fabricCanvas.getObjects() as FabricObject[];
-        const newLayers: Layer[] = loadedObjects.map((obj) => ({
-          id: obj.id || uuidv4(),
-          name: obj.name || "Imported Object",
-          type: (obj.type as Layer["type"]) || "shape",
-          visible: obj.visible !== false,
-          object: obj,
-        }));
+      // Save: Ctrl+S or Cmd+S
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleSave();
+      }
+    };
 
-        // Add background layer if not present
-        if (!newLayers.find((layer) => layer.type === "background")) {
-          newLayers.unshift({
-            id: uuidv4(),
-            name: "Background",
-            type: "background",
-            visible: true,
-            object: fabricCanvas as unknown as fabric.Object,
-          });
-        }
-
-        setLayers(newLayers);
-        toast.success("Project loaded successfully");
-      });
-    } catch (error) {
-      console.error("Error loading canvas state:", error);
-      toast.error("Failed to load project data");
-    }
-  }, [fabricCanvas, initialCanvasData]);
+    window.addEventListener("keydown", handleKeyboard);
+    return () => window.removeEventListener("keydown", handleKeyboard);
+  }, [handleUndo, handleRedo, handleSave]);
 
   // Save project data to Supabase
   const handleSave = async () => {
@@ -368,38 +404,28 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
-  // Set up keyboard shortcuts
-  useEffect(() => {
-    const handleKeyboard = (e: KeyboardEvent) => {
-      // Ignore keyboard shortcuts when typing in input fields
-      if (e.target instanceof HTMLInputElement || 
-          e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
+  // Updated navigation function
+  const navigateToProjects = () => {
+    if (hasUnsavedChanges) {
+      setNavigationTarget("/projects");
+      setShowNavigationDialog(true);
+    } else {
+      navigate("/projects");
+    }
+  };
 
-      // Undo: Ctrl+Z or Cmd+Z
-      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
-        e.preventDefault();
-        handleUndo();
-      }
-      
-      // Redo: Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y or Cmd+Y
-      if (((e.ctrlKey || e.metaKey) && e.key === "z" && e.shiftKey) || 
-          ((e.ctrlKey || e.metaKey) && e.key === "y")) {
-        e.preventDefault();
-        handleRedo();
-      }
+  const navigateToDocumentation = () => {
+    if (hasUnsavedChanges) {
+      setNavigationTarget("/documentation");
+      setShowNavigationDialog(true);
+    } else {
+      navigate("/documentation");
+    }
+  };
 
-      // Save: Ctrl+S or Cmd+S
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        handleSave();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyboard);
-    return () => window.removeEventListener("keydown", handleKeyboard);
-  }, [handleUndo, handleRedo, handleSave]);
+  const handleConfirmNavigation = () => {
+    navigate(navigationTarget);
+  };
 
   // Render active tab content
   const renderActiveTabContent = () => {
@@ -433,29 +459,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       default:
         return null;
     }
-  };
-
-  // Updated navigation function
-  const navigateToProjects = () => {
-    if (hasUnsavedChanges) {
-      setNavigationTarget("/projects");
-      setShowNavigationDialog(true);
-    } else {
-      navigate("/projects");
-    }
-  };
-
-  const navigateToDocumentation = () => {
-    if (hasUnsavedChanges) {
-      setNavigationTarget("/documentation");
-      setShowNavigationDialog(true);
-    } else {
-      navigate("/documentation");
-    }
-  };
-
-  const handleConfirmNavigation = () => {
-    navigate(navigationTarget);
   };
 
   return (

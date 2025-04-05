@@ -1,5 +1,5 @@
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { fabric } from 'fabric';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
@@ -34,10 +34,10 @@ export const useCanvasHistory = (
   const isPerformingUndoRedo = useRef(false);
 
   // Update refs when states change
-  useState(() => {
+  useEffect(() => {
     undoStackRef.current = undoStack;
     redoStackRef.current = redoStack;
-  });
+  }, [undoStack, redoStack]);
 
   // Save canvas state to history
   const saveState = useCallback(() => {
@@ -235,7 +235,7 @@ const updateLayersFromCanvas = (
   }
 };
 
-// Setup canvas event listeners
+// Setup canvas event listeners with improved change detection
 const setupCanvasEventListeners = (
   canvas: fabric.Canvas,
   saveState: () => void
@@ -254,6 +254,15 @@ const setupCanvasEventListeners = (
   canvas.on('object:modified', saveStateDebounced);
   canvas.on('object:added', saveStateDebounced);
   canvas.on('object:removed', saveStateDebounced);
+  
+  // Path creation completed (for drawing)
+  canvas.on('path:created', saveStateDebounced);
+
+  // Text editing
+  canvas.on('text:changed', saveStateDebounced);
+  
+  // Background color changes
+  canvas.on('background:changed', saveStateDebounced);
 
   // Track object movement
   canvas.on('mouse:down', (options) => {
