@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ export const Navbar = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="flex justify-between items-center h-[75px] bg-[#2A2A2A] px-9 py-0 border-b-[#333] border-b border-solid max-sm:px-4 max-sm:py-0">
+    <header className="flex justify-between items-center h-[75px] bg-[#2A2A2A] px-9 py-0 border-b-[#333] border-b border-solid w-full">
       <nav className="flex items-center gap-10">
         <a href="/" className="flex items-center gap-4 text-2xl">
           <span aria-hidden="true">🖌️</span>

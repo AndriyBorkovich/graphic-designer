@@ -40,8 +40,8 @@ interface CanvasProps {
 }
 
 // Default canvas dimensions
-const DEFAULT_WIDTH = 1302;
-const DEFAULT_HEIGHT = 800;
+const DEFAULT_WIDTH = 800;
+const DEFAULT_HEIGHT = 600;
 
 export const Canvas: React.FC<CanvasProps> = ({
   activeTool,
@@ -100,14 +100,28 @@ export const Canvas: React.FC<CanvasProps> = ({
           const containerWidth = canvasContainerRef.current.clientWidth;
           const containerHeight = canvasContainerRef.current.clientHeight;
 
-          // Apply zoom level
-          const zoomRatio = zoom / 100;
+          // Calculate the scale to fit the canvas in the container while maintaining aspect ratio
+          const scaleX = (containerWidth * 0.8) / DEFAULT_WIDTH;
+          const scaleY = (containerHeight * 0.8) / DEFAULT_HEIGHT;
+          const scale = Math.min(scaleX, scaleY);
 
-          // Set the canvas dimensions to match container
+          // Apply zoom level
+          const zoomRatio = (zoom / 100) * scale;
+
+          // Set the canvas dimensions
           newCanvas.setDimensions(
             {
-              width: containerWidth,
-              height: containerHeight,
+              width: DEFAULT_WIDTH * scale,
+              height: DEFAULT_HEIGHT * scale,
+            },
+            { cssOnly: true }
+          );
+
+          // Keep the original dimensions for the canvas itself
+          newCanvas.setDimensions(
+            {
+              width: DEFAULT_WIDTH,
+              height: DEFAULT_HEIGHT,
             },
             { cssOnly: false }
           );
@@ -115,16 +129,16 @@ export const Canvas: React.FC<CanvasProps> = ({
           // Set zoom
           newCanvas.setZoom(zoomRatio);
 
+          // Center the viewport
+          newCanvas.centerObject(
+            newCanvas.getObjects()[0] || new fabric.Object()
+          );
+
           // Update state
           setDimensions({
-            width: containerWidth,
-            height: containerHeight,
+            width: DEFAULT_WIDTH * scale,
+            height: DEFAULT_HEIGHT * scale,
           });
-
-          // Center objects if any exist
-          if (newCanvas.getObjects().length > 0) {
-            newCanvas.centerObject(newCanvas.getObjects()[0]);
-          }
 
           // Render
           newCanvas.requestRenderAll();
@@ -548,11 +562,11 @@ export const Canvas: React.FC<CanvasProps> = ({
       className="flex items-center justify-center w-full h-full"
       style={{
         backgroundColor: "white",
-        overflow: "auto",
         position: "relative",
+        padding: "20px",
       }}
     >
-      <canvas ref={canvasRef} />
+      <canvas ref={canvasRef} style={{ maxWidth: "100%", maxHeight: "100%" }} />
       {!canvas && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-70">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mb-3"></div>

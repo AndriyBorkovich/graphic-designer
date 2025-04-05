@@ -601,8 +601,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   };
 
   return (
-    <div className="flex h-auto w-auto">
-      <div className="flex">
+    <div className="flex h-full w-full overflow-hidden">
+      <div className="flex h-full">
         <div className="bg-gray-900 border-r border-gray-800">
           <SidebarNav
             activeTab={activeTab}
@@ -615,8 +615,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 h-full w-auto">
-        <div className="flex justify-between items-center p-2 border-b bg-[#2A2A2A] text-white w-full">
+      <div className="flex flex-col flex-1 h-full">
+        <div className="flex justify-between items-center p-2 border-b bg-[#2A2A2A] text-white">
           <div className="ml-2 font-medium truncate">
             {projectName}
             {hasUnsavedChanges && (
@@ -763,7 +763,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </div>
         </div>
         <div className="flex-1 overflow-hidden bg-gray-800">
-          <div className="h-auto w-auto flex items-center justify-center">
+          <div className="h-full w-full flex items-center justify-center">
             <Canvas
               activeTool={activeTool}
               zoom={zoom}
