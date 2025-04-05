@@ -69,15 +69,6 @@ export const LayersTab: React.FC<LayersTabProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
-            onClick={onLayerAdd}
-            title="Add Layer"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
             className="h-7 w-7 text-red-400 hover:text-red-500 hover:hover:bg-[#4318D1]/60"
             disabled={activeLayerId === null}
             onClick={() => activeLayerId && onLayerDelete(activeLayerId)}
