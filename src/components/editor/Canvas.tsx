@@ -157,37 +157,37 @@ export const Canvas: React.FC<CanvasProps> = ({
       if (newCanvas) {
         // Selection event
         newCanvas.on("selection:created", (e) => {
-          setSelectedObject(e.selected ? e.selected[0] : null);
+          const selected = e.selected ? e.selected : [];
+          setSelectedObject(selected);
 
-          // Find the layer that corresponds to the selected object
-          if (e.selected && e.selected[0]) {
-            const selectedObject = e.selected[0];
-            const layer = layers.find(
-              (layer) => layer.object === selectedObject
+          // Find the layers that correspond to the selected objects
+          if (selected.length > 0) {
+            const selectedLayers = layers.filter((layer) =>
+              selected.includes(layer.object)
             );
-            if (layer) {
-              setActiveLayerId(layer.id);
+            if (selectedLayers.length > 0) {
+              setActiveLayerId(selectedLayers[0].id);
             }
           }
         });
 
         newCanvas.on("selection:updated", (e) => {
-          setSelectedObject(e.selected ? e.selected[0] : null);
+          const selected = e.selected ? e.selected : [];
+          setSelectedObject(selected);
 
-          // Find the layer that corresponds to the selected object
-          if (e.selected && e.selected[0]) {
-            const selectedObject = e.selected[0];
-            const layer = layers.find(
-              (layer) => layer.object === selectedObject
+          // Find the layers that correspond to the selected objects
+          if (selected.length > 0) {
+            const selectedLayers = layers.filter((layer) =>
+              selected.includes(layer.object)
             );
-            if (layer) {
-              setActiveLayerId(layer.id);
+            if (selectedLayers.length > 0) {
+              setActiveLayerId(selectedLayers[0].id);
             }
           }
         });
 
         newCanvas.on("selection:cleared", () => {
-          setSelectedObject(null);
+          setSelectedObject([]);
           setActiveLayerId(null);
         });
 

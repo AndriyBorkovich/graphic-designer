@@ -429,19 +429,25 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
     if (isBackground && property === "fill") {
       // For background color changes, update the canvas background color
-      if (selectedObject.canvas) {
-        selectedObject.canvas.setBackgroundColor(value, () => {
-          selectedObject.canvas.renderAll();
+      if (fabricCanvas) {
+        fabricCanvas.setBackgroundColor(value, () => {
+          fabricCanvas.renderAll();
         });
       }
     } else {
-      // For regular objects, update the property directly
-      selectedObject.set({ [property]: value });
-      setSelectedObject(selectedObject);
+      // Handle both single object and multiple object selections
+      const objectsToUpdate = Array.isArray(selectedObject)
+        ? selectedObject
+        : [selectedObject];
 
-      if (selectedObject.canvas) {
-        selectedObject.canvas.renderAll();
-      }
+      objectsToUpdate.forEach((obj) => {
+        if (obj && typeof obj.set === "function") {
+          obj.set(property, value);
+          if (obj.canvas) {
+            obj.canvas.renderAll();
+          }
+        }
+      });
     }
 
     markUnsavedChanges();
@@ -776,24 +782,36 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               size="icon"
               className="text-red-500 hover:bg-red-900/20"
               onClick={() => {
-                if (selectedObject && selectedObject.canvas) {
-                  const canvas = selectedObject.canvas;
-                  canvas.remove(selectedObject);
-                  setSelectedObject(null);
+                if (!selectedObject || !Array.isArray(selectedObject)) return;
 
-                  // Remove the corresponding layer
-                  const layerToRemove = layers.find(
-                    (l) => l.object === selectedObject
-                  );
-                  if (layerToRemove) {
-                    handleLayerDelete(layerToRemove.id);
+                selectedObject.forEach((obj) => {
+                  if (obj && obj.canvas) {
+                    const canvas = obj.canvas;
+                    canvas.remove(obj);
+
+                    // Remove the corresponding layer
+                    const layerToRemove = layers.find((l) => l.object === obj);
+                    if (layerToRemove) {
+                      handleLayerDelete(layerToRemove.id);
+                    }
                   }
+                });
 
-                  toast.success("Object deleted");
-                }
+                setSelectedObject([]);
+                toast.success(
+                  `${selectedObject.length} object${
+                    selectedObject.length !== 1 ? "s" : ""
+                  } deleted`
+                );
               }}
-              disabled={!selectedObject}
-              title="Delete selected"
+              disabled={
+                !selectedObject ||
+                !Array.isArray(selectedObject) ||
+                selectedObject.length === 0
+              }
+              title={`Delete selected (${
+                Array.isArray(selectedObject) ? selectedObject.length : 0
+              } items)`}
             >
               <Trash2 className="h-4 w-4" />
             </Button>

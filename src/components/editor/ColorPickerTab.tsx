@@ -11,16 +11,16 @@ interface ColorPickerTabProps {
 }
 
 export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
-  selectedObject,
+  selectedObject = null,
   onColorChange,
 }) => {
   const [activeTab, setActiveTab] = useState<string>("picker");
-  const [currentColor, setCurrentColor] = useState<string>("#00FF00");
+  const [currentColor, setCurrentColor] = useState<string>("#000000");
   const [colorTarget, setColorTarget] = useState<string>("fill");
 
   // RGB values
   const [red, setRed] = useState<number>(0);
-  const [green, setGreen] = useState<number>(255);
+  const [green, setGreen] = useState<number>(0);
   const [blue, setBlue] = useState<number>(0);
 
   // Recent colors array
@@ -34,14 +34,15 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
 
   // Initialize color values based on selected object
   useEffect(() => {
-    if (selectedObject) {
+    if (!selectedObject) return;
+
+    try {
       // Check if this is a brush
       if (selectedObject.type === "brush") {
-        setCurrentColor(selectedObject.color);
+        const color = selectedObject.color || "#000000";
+        setCurrentColor(color);
         // Parse the hex color to RGB
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
-          selectedObject.color
-        );
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
         if (result) {
           setRed(parseInt(result[1], 16));
           setGreen(parseInt(result[2], 16));
@@ -59,6 +60,13 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
       if (isBackground) {
         // For background, get the canvas background color
         targetColor = selectedObject.backgroundColor || "#ffffff";
+      } else if (Array.isArray(selectedObject)) {
+        // For multiple selected objects, use the first object's color
+        const firstObject = selectedObject[0];
+        targetColor =
+          colorTarget === "fill"
+            ? firstObject.fill || "#000000"
+            : firstObject.stroke || "#000000";
       } else {
         // For regular objects, get fill or stroke color
         targetColor =
@@ -78,6 +86,13 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
         setGreen(parseInt(result[2], 16));
         setBlue(parseInt(result[3], 16));
       }
+    } catch (error) {
+      console.error("Error setting color values:", error);
+      // Set default values if there's an error
+      setCurrentColor("#000000");
+      setRed(0);
+      setGreen(0);
+      setBlue(0);
     }
   }, [selectedObject, colorTarget]);
 
