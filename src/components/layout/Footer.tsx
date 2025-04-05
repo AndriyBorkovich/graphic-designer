@@ -83,7 +83,7 @@ export const Footer = () => {
       </div>
       <div className="flex justify-between items-center px-0 py-8 border-t-[#333] border-t border-solid max-sm:flex-col max-sm:items-start max-sm:gap-4">
         <p className="text-[#666] text-base">
-          © 2024 DesignPro. All rights reserved.
+          © 2025 DesignPro. All rights reserved.
         </p>
         <nav className="flex gap-4">
           <a

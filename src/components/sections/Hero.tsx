@@ -16,7 +16,7 @@ export const Hero = () => {
         <div className="flex gap-4 justify-center max-sm:flex-col max-sm:gap-4">
           <button
             className="text-white text-base font-medium bg-[#4318D1] px-8 py-[17px] rounded-lg hover:bg-[#3614B8] transition-colors"
-            onClick={() => navigate("/sign-in")}
+            onClick={() => navigate("/projects")}
           >
             Start designing now
           </button>

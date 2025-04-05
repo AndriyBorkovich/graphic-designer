@@ -57,7 +57,6 @@ const ProjectsPage = () => {
   });
 
   useEffect(() => {
-    //console.log("user", user);
     if (!user) {
       navigate("/sign-in");
       return;

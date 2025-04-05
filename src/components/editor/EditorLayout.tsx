@@ -13,6 +13,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Layer {
   id: string;
@@ -55,6 +61,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(true);
 
   // Track unsaved changes
   const markUnsavedChanges = useCallback(() => {
@@ -206,16 +213,16 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
-  // Auto-save functionality (optional)
+  // Auto-save functionality
   useEffect(() => {
-    if (hasUnsavedChanges) {
+    if (hasUnsavedChanges && isAutoSaveEnabled) {
       const timeoutId = setTimeout(() => {
         handleSave();
-      }, 30000); // Auto-save after 30 seconds of no changes
+      }, 10000); // Auto-save after 10 seconds of no changes
 
       return () => clearTimeout(timeoutId);
     }
-  }, [hasUnsavedChanges]);
+  }, [hasUnsavedChanges, isAutoSaveEnabled]);
 
   // Object update handler
   const handleObjectUpdate = (property: string, value: any) => {
@@ -411,19 +418,52 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              title="Save Project"
-              onClick={handleSave}
-              disabled={isSaving || !hasUnsavedChanges}
-              className={cn(
-                isSaving && "animate-pulse",
-                !hasUnsavedChanges && "opacity-50"
-              )}
-            >
-              <Save className="h-5 w-5" />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Save Project"
+                    onClick={handleSave}
+                    disabled={isSaving || !hasUnsavedChanges}
+                    className={cn(
+                      isSaving && "animate-pulse",
+                      !hasUnsavedChanges && "opacity-50"
+                    )}
+                  >
+                    <Save className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Save project (Ctrl+S)</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsAutoSaveEnabled(!isAutoSaveEnabled)}
+                    className={cn(
+                      "text-xs px-2 h-8",
+                      isAutoSaveEnabled
+                        ? "bg-gray-700/50 text-gray-200"
+                        : "bg-transparent text-gray-400 hover:text-gray-200"
+                    )}
+                  >
+                    Auto
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isAutoSaveEnabled ? "Disable" : "Enable"} auto-save</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
             <Button variant="ghost" size="icon" title="Undo">
               <Undo className="h-5 w-5" />
             </Button>
