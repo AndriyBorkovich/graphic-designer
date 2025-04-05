@@ -37,6 +37,7 @@ interface CanvasProps {
   activeLayerId: string | null;
   setActiveLayerId: (layerId: string | null) => void;
   onCanvasInitialized?: (canvas: fabric.Canvas) => void;
+  brushColor?: string;
 }
 
 // Default canvas dimensions
@@ -52,6 +53,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   activeLayerId,
   setActiveLayerId,
   onCanvasInitialized,
+  brushColor = "#000000",
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
@@ -373,8 +375,11 @@ export const Canvas: React.FC<CanvasProps> = ({
 
       case "draw":
         canvas.isDrawingMode = true;
-        canvas.freeDrawingBrush.width = 5;
-        canvas.freeDrawingBrush.color = "#000000";
+        // Create a new brush to ensure we're not using the eraser
+        const drawingBrush = new fabric.PencilBrush(canvas);
+        drawingBrush.width = 5;
+        drawingBrush.color = brushColor;
+        canvas.freeDrawingBrush = drawingBrush;
         break;
 
       case "rectangle":
@@ -445,7 +450,14 @@ export const Canvas: React.FC<CanvasProps> = ({
       canvas.off("mouse:up");
       canvas.off("erasing:end");
     };
-  }, [activeTool, canvas, setLayers]);
+  }, [activeTool, canvas, setLayers, brushColor]);
+
+  // Update brush color when it changes
+  useEffect(() => {
+    if (canvas && canvas.isDrawingMode) {
+      canvas.freeDrawingBrush.color = brushColor;
+    }
+  }, [brushColor, canvas]);
 
   // Rectangle Drawing
   const startAddingRect = (e: fabric.IEvent<MouseEvent>) => {

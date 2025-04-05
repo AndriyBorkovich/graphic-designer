@@ -66,6 +66,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("tools");
   const [fabricCanvas, setFabricCanvas] = useState<fabric.Canvas | null>(null);
+  const [brushColor, setBrushColor] = useState<string>("#000000");
   const navigate = useNavigate();
   const { user } = useAuth();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -556,20 +557,42 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const isUndoDisabled = undoStack.length <= 1;
   const isRedoDisabled = redoStack.length === 0;
 
+  // Handle brush color change
+  const handleBrushColorChange = (color: string) => {
+    setBrushColor(color);
+    if (fabricCanvas && fabricCanvas.isDrawingMode) {
+      fabricCanvas.freeDrawingBrush.color = color;
+      fabricCanvas.renderAll();
+    }
+  };
+
   // Render active tab content
   const renderActiveTabContent = () => {
     switch (activeTab) {
       case "tools":
         return (
-          <ToolsTab activeTool={activeTool} setActiveTool={setActiveTool} />
+          <ToolsTab
+            activeTool={activeTool}
+            setActiveTool={setActiveTool}
+            brushColor={brushColor}
+            onBrushColorChange={handleBrushColorChange}
+          />
         );
       case "colors":
         return (
           <ColorPickerTab
-            selectedObject={selectedObject}
-            onColorChange={(property, color) =>
-              handleObjectUpdate(property, color)
+            selectedObject={
+              activeTool === "draw"
+                ? { type: "brush", color: brushColor }
+                : selectedObject
             }
+            onColorChange={(property, color) => {
+              if (activeTool === "draw") {
+                handleBrushColorChange(color);
+              } else {
+                handleObjectUpdate(property, color);
+              }
+            }}
           />
         );
       case "layers":
@@ -787,6 +810,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               activeLayerId={activeLayerId}
               setActiveLayerId={setActiveLayerId}
               onCanvasInitialized={handleCanvasInitialized}
+              brushColor={brushColor}
             />
           </div>
         </div>

@@ -35,6 +35,21 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
   // Initialize color values based on selected object
   useEffect(() => {
     if (selectedObject) {
+      // Check if this is a brush
+      if (selectedObject.type === "brush") {
+        setCurrentColor(selectedObject.color);
+        // Parse the hex color to RGB
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
+          selectedObject.color
+        );
+        if (result) {
+          setRed(parseInt(result[1], 16));
+          setGreen(parseInt(result[2], 16));
+          setBlue(parseInt(result[3], 16));
+        }
+        return;
+      }
+
       // Check if the selected object is the background
       const isBackground =
         selectedObject.canvas && selectedObject === selectedObject.canvas;
@@ -182,7 +197,11 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
 
       {/* Color target selection */}
       <div className="flex mb-3">
-        {isBackground ? (
+        {selectedObject?.type === "brush" ? (
+          <div className="flex-1 px-2 py-1 text-center text-sm cursor-pointer transition-colors bg-primary text-white">
+            Brush Color
+          </div>
+        ) : isBackground ? (
           <div className="flex-1 px-2 py-1 text-center text-sm cursor-pointer transition-colors bg-primary text-white">
             Background
           </div>
@@ -199,7 +218,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
               Fill
             </div>
             <div
-              className={`flex-1 px-2 py-1 text-center text-sm  rounded-sm cursor-pointer transition-colors ${
+              className={`flex-1 px-2 py-1 text-center text-sm rounded-sm cursor-pointer transition-colors ${
                 colorTarget === "stroke"
                   ? "bg-[#4318D1] text-white"
                   : "bg-[#3A3A3A] text-gray-300"

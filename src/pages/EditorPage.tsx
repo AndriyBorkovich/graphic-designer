@@ -44,8 +44,8 @@ const EditorPage: React.FC = () => {
       }
 
       if (data) {
-        setProjectName(data.name);
-        setCanvasData(data.canvas_data);
+        setProjectName(data.name as string);
+        setCanvasData(data.canvas_data as string);
         document.title = `${data.name} | Editor`;
       }
     } catch (error: any) {

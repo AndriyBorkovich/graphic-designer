@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -12,19 +12,41 @@ import {
   Circle,
   Type,
   Eraser,
+  Palette,
+  Sliders,
 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 
 interface ToolsTabProps {
   activeTool: string;
   setActiveTool: (tool: string) => void;
   isDarkMode?: boolean;
+  brushColor?: string;
+  onBrushColorChange?: (color: string) => void;
 }
 
 export const ToolsTab: React.FC<ToolsTabProps> = ({
   activeTool,
   setActiveTool,
   isDarkMode = true,
+  brushColor = "#000000",
+  onBrushColorChange,
 }) => {
+  const [activeColorTab, setActiveColorTab] = useState<string>("picker");
+  const [red, setRed] = useState<number>(0);
+  const [green, setGreen] = useState<number>(0);
+  const [blue, setBlue] = useState<number>(0);
+  const [recentColors, setRecentColors] = useState<string[]>([
+    "#5500ff",
+    "#ff5500",
+    "#00ff55",
+    "#4400ff",
+    "#ffff00",
+  ]);
+
   const tools = [
     { name: "select", icon: MousePointer, tooltip: "Select" },
     { name: "draw", icon: PenTool, tooltip: "Draw" },
@@ -33,6 +55,41 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
     { name: "text", icon: Type, tooltip: "Text" },
     { name: "eraser", icon: Eraser, tooltip: "Eraser" },
   ];
+
+  // Convert RGB to Hex
+  const rgbToHex = (r: number, g: number, b: number): string => {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  };
+
+  // Handle RGB slider changes
+  const handleRedChange = (value: number[]) => {
+    const newRed = value[0];
+    setRed(newRed);
+    const newHex = rgbToHex(newRed, green, blue);
+    onBrushColorChange?.(newHex);
+  };
+
+  const handleGreenChange = (value: number[]) => {
+    const newGreen = value[0];
+    setGreen(newGreen);
+    const newHex = rgbToHex(red, newGreen, blue);
+    onBrushColorChange?.(newHex);
+  };
+
+  const handleBlueChange = (value: number[]) => {
+    const newBlue = value[0];
+    setBlue(newBlue);
+    const newHex = rgbToHex(red, green, newBlue);
+    onBrushColorChange?.(newHex);
+  };
+
+  // Add color to recent colors
+  const addToRecentColors = (color: string) => {
+    if (!recentColors.includes(color)) {
+      const newRecentColors = [color, ...recentColors.slice(0, 4)];
+      setRecentColors(newRecentColors);
+    }
+  };
 
   return (
     <div>
@@ -58,6 +115,147 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
           </Tooltip>
         ))}
       </div>
+
+      {/* Brush color picker */}
+      {activeTool === "draw" && (
+        <div className="mt-4 space-y-4">
+          <h4 className="text-sm font-medium mb-2 text-white">Brush Color</h4>
+
+          <Tabs
+            value={activeColorTab}
+            onValueChange={setActiveColorTab}
+            className="w-full"
+          >
+            <TabsList className="w-full grid grid-cols-2 bg-[#3A3A3A]">
+              <TabsTrigger value="picker" className="flex items-center gap-1">
+                <Palette className="h-4 w-4" />
+                <span>Picker</span>
+              </TabsTrigger>
+              <TabsTrigger value="sliders" className="flex items-center gap-1">
+                <Sliders className="h-4 w-4" />
+                <span>Sliders</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Color Picker */}
+            <TabsContent value="picker" className="pt-4">
+              <div className="relative w-full aspect-square max-h-48 bg-gray-800 rounded overflow-hidden">
+                <input
+                  type="color"
+                  value={brushColor}
+                  onChange={(e) => {
+                    onBrushColorChange?.(e.target.value);
+                    addToRecentColors(e.target.value);
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-100 cursor-pointer"
+                />
+              </div>
+            </TabsContent>
+
+            {/* RGB Sliders */}
+            <TabsContent value="sliders" className="pt-4">
+              <div className="w-full aspect-square max-h-48 bg-gray-800 mb-3 rounded flex items-center justify-center">
+                <div
+                  style={{ backgroundColor: brushColor }}
+                  className="w-5/6 h-5/6 rounded-sm"
+                />
+              </div>
+
+              <div className="space-y-3 mt-4">
+                <div>
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="red" className="text-xs text-white">
+                      Red
+                    </Label>
+                    <span className="text-xs text-white">
+                      {Math.round((red / 255) * 100)}%
+                    </span>
+                  </div>
+                  <Slider
+                    id="red"
+                    min={0}
+                    max={255}
+                    step={1}
+                    value={[red]}
+                    onValueChange={handleRedChange}
+                    className="my-1 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&_[role=slider]]:border-none [&_[role=slider]]:bg-white [&_[role=slider]]:shadow-md [&_[role=slider]]:shadow-black/50 [&_[role=slider]]:hover:bg-white/90 [&_[role=slider]]:focus:bg-white/90 [&_[role=track]]:h-1 [&_[role=track]]:bg-red-500/30 [&_[role=range]]:bg-red-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="green" className="text-xs text-white">
+                      Green
+                    </Label>
+                    <span className="text-xs text-white">
+                      {Math.round((green / 255) * 100)}%
+                    </span>
+                  </div>
+                  <Slider
+                    id="green"
+                    min={0}
+                    max={255}
+                    step={1}
+                    value={[green]}
+                    onValueChange={handleGreenChange}
+                    className="my-1 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&_[role=slider]]:border-none [&_[role=slider]]:bg-white [&_[role=slider]]:shadow-md [&_[role=slider]]:shadow-black/50 [&_[role=slider]]:hover:bg-white/90 [&_[role=slider]]:focus:bg-white/90 [&_[role=track]]:h-1 [&_[role=track]]:bg-green-500/30 [&_[role=range]]:bg-green-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="blue" className="text-xs text-white">
+                      Blue
+                    </Label>
+                    <span className="text-xs text-white">
+                      {Math.round((blue / 255) * 100)}%
+                    </span>
+                  </div>
+                  <Slider
+                    id="blue"
+                    min={0}
+                    max={255}
+                    step={1}
+                    value={[blue]}
+                    onValueChange={handleBlueChange}
+                    className="my-1 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&_[role=slider]]:border-none [&_[role=slider]]:bg-white [&_[role=slider]]:shadow-md [&_[role=slider]]:shadow-black/50 [&_[role=slider]]:hover:bg-white/90 [&_[role=slider]]:focus:bg-white/90 [&_[role=track]]:h-1 [&_[role=track]]:bg-blue-500/30 [&_[role=range]]:bg-blue-500"
+                  />
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {/* Hex input */}
+          <div>
+            <Label htmlFor="hex-color" className="text-xs text-white">
+              Hex Color
+            </Label>
+            <Input
+              id="hex-color"
+              value={brushColor}
+              disabled={true}
+              className="h-8"
+            />
+          </div>
+
+          {/* Recent colors */}
+          <div>
+            <Label className="text-xs block mb-2 text-white">
+              Recent Colors
+            </Label>
+            <div className="flex space-x-2">
+              {recentColors.map((color, index) => (
+                <div
+                  key={`${color}-${index}`}
+                  className="w-6 h-6 rounded cursor-pointer border border-gray-300"
+                  style={{ backgroundColor: color }}
+                  onClick={() => onBrushColorChange?.(color)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
