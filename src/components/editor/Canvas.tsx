@@ -38,6 +38,14 @@ interface CanvasProps {
   setActiveLayerId: (layerId: string | null) => void;
   onCanvasInitialized?: (canvas: fabric.Canvas) => void;
   brushColor?: string;
+  textProperties?: {
+    fontSize?: number;
+    fontFamily?: string;
+    fontWeight?: string;
+    fontStyle?: "" | "normal" | "italic" | "oblique";
+    underline?: boolean;
+    textAlign?: string;
+  };
 }
 
 // Default canvas dimensions
@@ -54,6 +62,14 @@ export const Canvas: React.FC<CanvasProps> = ({
   setActiveLayerId,
   onCanvasInitialized,
   brushColor = "#000000",
+  textProperties = {
+    fontSize: 18,
+    fontFamily: "Arial",
+    fontWeight: "normal",
+    fontStyle: "normal",
+    underline: false,
+    textAlign: "left",
+  },
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
@@ -579,7 +595,12 @@ export const Canvas: React.FC<CanvasProps> = ({
     const text = new fabric.Textbox("Click to edit text", {
       left: e.pointer.x,
       top: e.pointer.y,
-      fontSize: 18,
+      fontSize: textProperties.fontSize,
+      fontFamily: textProperties.fontFamily,
+      fontWeight: textProperties.fontWeight,
+      fontStyle: textProperties.fontStyle,
+      underline: textProperties.underline,
+      textAlign: textProperties.textAlign,
       width: 200,
       fill: "#000000",
     });

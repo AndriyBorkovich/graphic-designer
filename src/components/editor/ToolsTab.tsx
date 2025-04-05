@@ -14,11 +14,24 @@ import {
   Eraser,
   Palette,
   Sliders,
+  Bold,
+  Italic,
+  Underline,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ToolsTabProps {
   activeTool: string;
@@ -26,6 +39,15 @@ interface ToolsTabProps {
   isDarkMode?: boolean;
   brushColor?: string;
   onBrushColorChange?: (color: string) => void;
+  onTextPropertyChange?: (property: string, value: any) => void;
+  textProperties?: {
+    fontSize?: number;
+    fontFamily?: string;
+    fontWeight?: string;
+    fontStyle?: string;
+    underline?: boolean;
+    textAlign?: string;
+  };
 }
 
 export const ToolsTab: React.FC<ToolsTabProps> = ({
@@ -34,6 +56,15 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
   isDarkMode = true,
   brushColor = "#000000",
   onBrushColorChange,
+  onTextPropertyChange,
+  textProperties = {
+    fontSize: 18,
+    fontFamily: "Arial",
+    fontWeight: "normal",
+    fontStyle: "normal",
+    underline: false,
+    textAlign: "left",
+  },
 }) => {
   const [activeColorTab, setActiveColorTab] = useState<string>("picker");
   const [red, setRed] = useState<number>(0);
@@ -54,6 +85,16 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
     { name: "circle", icon: Circle, tooltip: "Circle" },
     { name: "text", icon: Type, tooltip: "Text" },
     { name: "eraser", icon: Eraser, tooltip: "Eraser" },
+  ];
+
+  const fontFamilies = [
+    "Arial",
+    "Times New Roman",
+    "Helvetica",
+    "Courier New",
+    "Georgia",
+    "Verdana",
+    "Impact",
   ];
 
   // Convert RGB to Hex
@@ -115,6 +156,152 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
           </Tooltip>
         ))}
       </div>
+
+      {/* Text Properties */}
+      {activeTool === "text" && (
+        <div className="mt-4 space-y-4">
+          <h4 className="text-sm font-medium mb-2 text-white">
+            Text Properties
+          </h4>
+
+          {/* Font Family */}
+          <div>
+            <Label htmlFor="font-family" className="text-xs text-white mb-2">
+              Font Family
+            </Label>
+            <Select
+              value={textProperties.fontFamily}
+              onValueChange={(value) =>
+                onTextPropertyChange?.("fontFamily", value)
+              }
+            >
+              <SelectTrigger className="w-full bg-gray-800 text-white border-gray-700">
+                <SelectValue placeholder="Select font" />
+              </SelectTrigger>
+              <SelectContent>
+                {fontFamilies.map((font) => (
+                  <SelectItem key={font} value={font}>
+                    {font}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Font Size */}
+          <div>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="font-size" className="text-xs text-white">
+                Font Size
+              </Label>
+              <span className="text-xs text-white">
+                {textProperties.fontSize}px
+              </span>
+            </div>
+            <Slider
+              id="font-size"
+              min={8}
+              max={72}
+              step={1}
+              value={[textProperties.fontSize || 18]}
+              onValueChange={(value) =>
+                onTextPropertyChange?.("fontSize", value[0])
+              }
+              className="my-2"
+            />
+          </div>
+
+          {/* Text Style Buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`w-10 h-10 ${
+                textProperties.fontWeight === "bold"
+                  ? "bg-[#4318D1]"
+                  : "bg-gray-800"
+              }`}
+              onClick={() =>
+                onTextPropertyChange?.(
+                  "fontWeight",
+                  textProperties.fontWeight === "bold" ? "normal" : "bold"
+                )
+              }
+            >
+              <Bold className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`w-10 h-10 ${
+                textProperties.fontStyle === "italic"
+                  ? "bg-[#4318D1]"
+                  : "bg-gray-800"
+              }`}
+              onClick={() =>
+                onTextPropertyChange?.(
+                  "fontStyle",
+                  textProperties.fontStyle === "italic" ? "normal" : "italic"
+                )
+              }
+            >
+              <Italic className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`w-10 h-10 ${
+                textProperties.underline ? "bg-[#4318D1]" : "bg-gray-800"
+              }`}
+              onClick={() =>
+                onTextPropertyChange?.("underline", !textProperties.underline)
+              }
+            >
+              <Underline className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Text Alignment */}
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`w-10 h-10 ${
+                textProperties.textAlign === "left"
+                  ? "bg-[#4318D1]"
+                  : "bg-gray-800"
+              }`}
+              onClick={() => onTextPropertyChange?.("textAlign", "left")}
+            >
+              <AlignLeft className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`w-10 h-10 ${
+                textProperties.textAlign === "center"
+                  ? "bg-[#4318D1]"
+                  : "bg-gray-800"
+              }`}
+              onClick={() => onTextPropertyChange?.("textAlign", "center")}
+            >
+              <AlignCenter className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`w-10 h-10 ${
+                textProperties.textAlign === "right"
+                  ? "bg-[#4318D1]"
+                  : "bg-gray-800"
+              }`}
+              onClick={() => onTextPropertyChange?.("textAlign", "right")}
+            >
+              <AlignRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Brush color picker */}
       {activeTool === "draw" && (

@@ -572,6 +572,82 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
+  // Add text properties state
+  const [textProperties, setTextProperties] = useState<{
+    fontSize: number;
+    fontFamily: string;
+    fontWeight: string;
+    fontStyle: "" | "normal" | "italic" | "oblique";
+    underline: boolean;
+    textAlign: string;
+  }>({
+    fontSize: 18,
+    fontFamily: "Arial",
+    fontWeight: "normal",
+    fontStyle: "normal",
+    underline: false,
+    textAlign: "left",
+  });
+
+  // Handle text property changes
+  const handleTextPropertyChange = (property: string, value: any) => {
+    setTextProperties((prev) => ({ ...prev, [property]: value }));
+
+    // Update selected object if it's a text object
+    if (selectedObject && Array.isArray(selectedObject)) {
+      selectedObject.forEach((obj) => {
+        if (obj && obj.type === "textbox") {
+          switch (property) {
+            case "fontSize":
+              obj.set("fontSize", value);
+              break;
+            case "fontFamily":
+              obj.set("fontFamily", value);
+              break;
+            case "fontWeight":
+              obj.set("fontWeight", value);
+              break;
+            case "fontStyle":
+              obj.set("fontStyle", value);
+              break;
+            case "underline":
+              obj.set("underline", value);
+              break;
+            case "textAlign":
+              obj.set("textAlign", value);
+              break;
+          }
+        }
+      });
+
+      if (fabricCanvas) {
+        fabricCanvas.requestRenderAll();
+        markUnsavedChanges();
+      }
+    }
+  };
+
+  // Update text properties when selecting a text object
+  useEffect(() => {
+    if (
+      selectedObject &&
+      Array.isArray(selectedObject) &&
+      selectedObject.length === 1
+    ) {
+      const obj = selectedObject[0];
+      if (obj && obj.type === "textbox") {
+        setTextProperties({
+          fontSize: obj.fontSize || 18,
+          fontFamily: obj.fontFamily || "Arial",
+          fontWeight: obj.fontWeight || "normal",
+          fontStyle: obj.fontStyle || "normal",
+          underline: obj.underline || false,
+          textAlign: obj.textAlign || "left",
+        });
+      }
+    }
+  }, [selectedObject]);
+
   // Render active tab content
   const renderActiveTabContent = () => {
     switch (activeTab) {
@@ -582,6 +658,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             setActiveTool={setActiveTool}
             brushColor={brushColor}
             onBrushColorChange={handleBrushColorChange}
+            textProperties={textProperties}
+            onTextPropertyChange={handleTextPropertyChange}
           />
         );
       case "colors":
