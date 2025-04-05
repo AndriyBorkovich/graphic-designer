@@ -184,7 +184,7 @@ const ProjectsPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#2A2A2A] text-white">
+    <div className="min-h-screen flex flex-col bg-[#333333] text-white">
       <Navbar />
       <main className="flex-grow flex">
         <div className="w-16 shrink-0">

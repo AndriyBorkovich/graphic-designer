@@ -123,7 +123,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   // Handle zoom out function
   const handleZoomOut = () => {
     try {
-      if (zoom > 50) {
+      if (zoom > 10) {
         setZoom(zoom - 10);
       } else {
         toast.info("Minimum zoom reached");
@@ -365,8 +365,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       );
       const currentTime = new Date().toISOString();
 
-      console.log("Data to update", canvasState, currentTime, currentTime);
-
       // Save to Supabase
       const { error: updateError } = await supabase
         .from("projects")
@@ -601,7 +599,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   };
 
   return (
-    <div className="flex h-[calc(100vh-75px)] w-full overflow-hidden">
+    <div className="flex h-full w-full overflow-hidden">
       <div className="flex h-full">
         <div className="bg-gray-900 border-r border-gray-800">
           <SidebarNav

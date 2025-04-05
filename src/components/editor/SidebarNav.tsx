@@ -11,6 +11,7 @@ import {
   Layers,
   LayoutGrid,
   BookIcon,
+  Pencil,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -32,7 +33,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   const navigate = useNavigate();
 
   const tabs = [
-    { id: "tools", icon: ClubIcon, label: "Tools" },
+    { id: "tools", icon: Pencil, label: "Tools" },
     { id: "colors", icon: PaletteIcon, label: "Colors" },
     { id: "layers", icon: Layers, label: "Layers" },
     {

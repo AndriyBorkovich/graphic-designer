@@ -40,7 +40,7 @@ interface CanvasProps {
 }
 
 // Default canvas dimensions
-const DEFAULT_WIDTH = 800;
+const DEFAULT_WIDTH = 1250;
 const DEFAULT_HEIGHT = 600;
 
 export const Canvas: React.FC<CanvasProps> = ({
@@ -423,7 +423,6 @@ export const Canvas: React.FC<CanvasProps> = ({
     canvas.on("erasing:end", (event: any) => {
       if (!event.targets) return;
 
-      console.log("Erased objects:", event.targets);
       // Update layers if needed
       setLayers((prevLayers) => {
         return prevLayers.map((layer) => {
