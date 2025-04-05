@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Routes, Route, useBeforeUnload, useLocation } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { Toaster } from "./components/ui/toaster";
-import { Sonner } from "./components/ui/sonner";
+import { Toaster as SonnerToaster } from "./components/ui/sonner";
 import Index from "./pages/Index";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
@@ -11,7 +11,6 @@ import EditorPage from "./pages/EditorPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import DocumentationPage from "./pages/DocumentationPage";
 import { ConfirmDialog } from "./components/dialogs/ConfirmDialog";
-import { useToast } from "./hooks/use-toast";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 function App() {
@@ -62,7 +61,7 @@ function App() {
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
-        <Sonner />
+        <SonnerToaster position="top-right" closeButton richColors />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/sign-in" element={<SignInPage />} />
