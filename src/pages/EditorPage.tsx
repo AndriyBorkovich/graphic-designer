@@ -25,9 +25,6 @@ const EditorPage: React.FC = () => {
     // If we have a project ID, fetch the project details
     if (projectId) {
       fetchProjectDetails();
-    } else {
-      // No project ID means we're creating a new project
-      setIsLoading(false);
     }
   }, [projectId, user, navigate]);
 
