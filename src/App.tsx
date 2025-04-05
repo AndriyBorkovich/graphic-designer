@@ -61,7 +61,7 @@ function App() {
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
-        <SonnerToaster position="top-right" closeButton richColors />
+        <SonnerToaster position="bottom-right" closeButton richColors />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/sign-in" element={<SignInPage />} />
