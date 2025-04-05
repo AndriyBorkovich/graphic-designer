@@ -28,6 +28,7 @@ import {
 import { Plus, FileImage, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 
 interface Project {
   id: string;
@@ -55,6 +56,10 @@ const ProjectsPage = () => {
     name: "",
     description: "",
   });
+  
+  // Add new state for delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -155,22 +160,25 @@ const ProjectsPage = () => {
   };
 
   const handleDeleteProject = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this project?")) {
-      return;
-    }
+    setProjectToDelete(id);
+    setDeleteDialogOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!projectToDelete) return;
+    
     try {
       // Using 'any' to bypass TypeScript errors with Supabase tables
       const { error } = await supabase
         .from("projects" as any)
         .delete()
-        .eq("id", id);
+        .eq("id", projectToDelete);
 
       if (error) {
         throw error;
       }
 
-      setProjects(projects.filter((project) => project.id !== id));
+      setProjects(projects.filter((project) => project.id !== projectToDelete));
       toast.success("Project deleted successfully");
     } catch (error) {
       console.error("Error deleting project:", error);
@@ -346,6 +354,17 @@ const ProjectsPage = () => {
           )}
         </div>
       </main>
+          {/* Delete Confirmation Dialog */}
+          <ConfirmDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            title="Delete project?"
+            description="This action cannot be undone. This will permanently delete the project and all associated data."
+            confirmLabel="Delete"
+            cancelLabel="Cancel"
+            onConfirm={confirmDelete}
+            destructive={true}
+          />
     </div>
   );
 };

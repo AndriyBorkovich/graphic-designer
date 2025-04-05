@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ interface SidebarNavProps {
   hideGeneralTabs?: boolean;
   setActiveTab: (tab: string) => void;
   onProjectsClick?: () => void;
+  onDocumentationClick?: () => void;
   className?: string;
 }
 
@@ -28,6 +30,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   hideGeneralTabs = false,
   setActiveTab,
   onProjectsClick,
+  onDocumentationClick,
   className,
 }) => {
   const navigate = useNavigate();
@@ -46,7 +49,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
       id: "documentation",
       icon: BookIcon,
       label: "Documentation",
-      action: () => navigate("/documentation"),
+      action: onDocumentationClick || (() => navigate("/documentation")),
     },
   ];
 

@@ -4,82 +4,120 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[];
+  | Json[]
 
 export type Database = {
   public: {
     Tables: {
-      projects: {
+      canvas_versions: {
         Row: {
-          created_at: string;
-          description: string | null;
-          file_size: string | null;
-          file_type: string;
-          id: string;
-          name: string;
-          updated_at: string;
-          user_id: string;
-          canvas_data: string | null;
-          last_modified_by: string | null;
-        };
+          canvas_data: Json
+          commit_message: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          project_id: string | null
+          status: Database["public"]["Enums"]["canvas_version_status"] | null
+          version_number: number
+        }
         Insert: {
-          created_at?: string;
-          description?: string | null;
-          file_size?: string | null;
-          file_type: string;
-          id?: string;
-          name: string;
-          updated_at?: string;
-          user_id: string;
-          canvas_data?: string | null;
-          last_modified_by?: string | null;
-        };
+          canvas_data: Json
+          commit_message?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          project_id?: string | null
+          status?: Database["public"]["Enums"]["canvas_version_status"] | null
+          version_number: number
+        }
         Update: {
-          created_at?: string;
-          description?: string | null;
-          file_size?: string | null;
-          file_type?: string;
-          id?: string;
-          name?: string;
-          updated_at?: string;
-          user_id?: string;
-          canvas_data?: string | null;
-          last_modified_by?: string | null;
-        };
+          canvas_data?: Json
+          commit_message?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          project_id?: string | null
+          status?: Database["public"]["Enums"]["canvas_version_status"] | null
+          version_number?: number
+        }
         Relationships: [
           {
-            foreignKeyName: "projects_last_modified_by_fkey";
-            columns: ["last_modified_by"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "canvas_versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "projects_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-    };
+        ]
+      }
+      projects: {
+        Row: {
+          canvas_data: Json | null
+          created_at: string
+          description: string | null
+          file_size: string | null
+          file_type: string
+          id: string
+          last_modified_by: string | null
+          name: string
+          updated_at: string
+          user_id: string
+          version_number: number | null
+          version_status:
+            | Database["public"]["Enums"]["canvas_version_status"]
+            | null
+        }
+        Insert: {
+          canvas_data?: Json | null
+          created_at?: string
+          description?: string | null
+          file_size?: string | null
+          file_type: string
+          id?: string
+          last_modified_by?: string | null
+          name: string
+          updated_at?: string
+          user_id: string
+          version_number?: number | null
+          version_status?:
+            | Database["public"]["Enums"]["canvas_version_status"]
+            | null
+        }
+        Update: {
+          canvas_data?: Json | null
+          created_at?: string
+          description?: string | null
+          file_size?: string | null
+          file_type?: string
+          id?: string
+          last_modified_by?: string | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+          version_number?: number | null
+          version_status?:
+            | Database["public"]["Enums"]["canvas_version_status"]
+            | null
+        }
+        Relationships: []
+      }
+    }
     Views: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     Functions: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     Enums: {
-      [_ in never]: never;
-    };
+      canvas_version_status: "draft" | "published" | "archived"
+    }
     CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
-};
+      [_ in never]: never
+    }
+  }
+}
 
-type PublicSchema = Database[Extract<keyof Database, "public">];
+type PublicSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
   PublicTableNameOrOptions extends
@@ -88,23 +126,23 @@ export type Tables<
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
         Database[PublicTableNameOrOptions["schema"]]["Views"])
-    : never = never
+    : never = never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
       Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R;
+      Row: infer R
     }
     ? R
     : never
   : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
-      PublicSchema["Views"])
-  ? (PublicSchema["Tables"] &
-      PublicSchema["Views"])[PublicTableNameOrOptions] extends {
-      Row: infer R;
-    }
-    ? R
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
     : never
-  : never;
 
 export type TablesInsert<
   PublicTableNameOrOptions extends
@@ -112,20 +150,20 @@ export type TablesInsert<
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
-    : never = never
+    : never = never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I;
+      Insert: infer I
     }
     ? I
     : never
   : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-  ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-      Insert: infer I;
-    }
-    ? I
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
     : never
-  : never;
 
 export type TablesUpdate<
   PublicTableNameOrOptions extends
@@ -133,20 +171,20 @@ export type TablesUpdate<
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
-    : never = never
+    : never = never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U;
+      Update: infer U
     }
     ? U
     : never
   : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-  ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-      Update: infer U;
-    }
-    ? U
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
     : never
-  : never;
 
 export type Enums<
   PublicEnumNameOrOptions extends
@@ -154,24 +192,24 @@ export type Enums<
     | { schema: keyof Database },
   EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
-    : never = never
+    : never = never,
 > = PublicEnumNameOrOptions extends { schema: keyof Database }
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
-  ? PublicSchema["Enums"][PublicEnumNameOrOptions]
-  : never;
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof PublicSchema["CompositeTypes"]
     | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof Database
   }
     ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
   ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
-  ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-  : never;
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never

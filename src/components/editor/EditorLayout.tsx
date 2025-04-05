@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ConfirmDialog } from "../dialogs/ConfirmDialog";
 
 // Extend fabric.Canvas type to include movementSnapshot
 declare module "fabric" {
@@ -73,6 +74,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(true);
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
+
+  // New state for navigation confirmation dialog
+  const [showNavigationDialog, setShowNavigationDialog] = useState(false);
+  const [navigationTarget, setNavigationTarget] = useState<string>("");
 
   // Refs to track current state
   const undoStackRef = useRef<string[]>([]);
@@ -585,17 +590,27 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
-  // Navigation with unsaved changes check
+  // Updated navigation function
   const navigateToProjects = () => {
     if (hasUnsavedChanges) {
-      const shouldLeave = window.confirm(
-        "You have unsaved changes. Are you sure you want to leave?"
-      );
-      if (!shouldLeave) {
-        return;
-      }
+      setNavigationTarget("/projects");
+      setShowNavigationDialog(true);
+    } else {
+      navigate("/projects");
     }
-    navigate("/projects");
+  };
+
+  const navigateToDocumentation = () => {
+    if (hasUnsavedChanges) {
+      setNavigationTarget("/documentation");
+      setShowNavigationDialog(true);
+    } else {
+      navigate("/documentation");
+    }
+  };
+
+  const handleConfirmNavigation = () => {
+    navigate(navigationTarget);
   };
 
   return (
@@ -606,6 +621,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             onProjectsClick={navigateToProjects}
+            onDocumentationClick={navigateToDocumentation}
           />
         </div>
         <div className="bg-[#2A2A2A] w-64 p-4 border-r border-gray-800">
@@ -775,6 +791,18 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Navigation Confirmation Dialog */}
+      <ConfirmDialog
+        open={showNavigationDialog}
+        onOpenChange={setShowNavigationDialog}
+        title="Leave without saving?"
+        description="You have unsaved changes. If you leave now, your changes will be lost."
+        confirmLabel="Leave anyway"
+        cancelLabel="Stay"
+        onConfirm={handleConfirmNavigation}
+        destructive={true}
+      />
     </div>
   );
 };
