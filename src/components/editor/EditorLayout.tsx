@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useBeforeUnload } from "react-router-dom";
 import { Canvas } from "./Canvas";
@@ -20,6 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ConfirmDialog } from "../dialogs/ConfirmDialog";
+import { useCanvasHistory } from "@/hooks/useCanvasHistory";
 
 // Extend fabric.Canvas type to include movementSnapshot
 declare module "fabric" {
@@ -72,30 +74,24 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(true);
-  const [undoStack, setUndoStack] = useState<string[]>([]);
-  const [redoStack, setRedoStack] = useState<string[]>([]);
 
   // New state for navigation confirmation dialog
   const [showNavigationDialog, setShowNavigationDialog] = useState(false);
   const [navigationTarget, setNavigationTarget] = useState<string>("");
 
-  // Refs to track current state
-  const undoStackRef = useRef<string[]>([]);
-  const redoStackRef = useRef<string[]>([]);
-
-  // Update refs when states change
-  useEffect(() => {
-    undoStackRef.current = undoStack;
-  }, [undoStack]);
-
-  useEffect(() => {
-    redoStackRef.current = redoStack;
-  }, [redoStack]);
-
   // Track unsaved changes
   const markUnsavedChanges = useCallback(() => {
     setHasUnsavedChanges(true);
   }, []);
+
+  // Use our new canvas history hook
+  const {
+    handleUndo,
+    handleRedo,
+    initializeHistory,
+    isUndoDisabled,
+    isRedoDisabled
+  } = useCanvasHistory(fabricCanvas, setLayers, markUnsavedChanges);
 
   // Warn about unsaved changes when leaving
   useBeforeUnload(
@@ -139,175 +135,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
-  // Save canvas state helper function with improved state handling
-  const saveState = useCallback(
-    (canvas: fabric.Canvas) => {
-      const currentState = JSON.stringify(
-        canvas.toJSON(["id", "name", "type", "visible"])
-      );
-
-      // Use ref to ensure we have the latest state
-      const newUndoStack = [...undoStackRef.current, currentState];
-      setUndoStack(newUndoStack);
-      setRedoStack([]); // Clear redo stack when new action is performed
-      markUnsavedChanges();
-    },
-    [markUnsavedChanges]
-  );
-
-  // Handle undo with improved state tracking
-  const handleUndo = useCallback(() => {
-    if (!fabricCanvas || undoStackRef.current.length <= 1) return;
-
-    try {
-      // Save current state to redo stack
-      const currentState = JSON.stringify(
-        fabricCanvas.toJSON(["id", "name", "type", "visible"])
-      );
-
-      // Use refs to ensure we have the latest states
-      const newRedoStack = [...redoStackRef.current, currentState];
-      setRedoStack(newRedoStack);
-
-      // Pop the last state from undo stack
-      const newUndoStack = [...undoStackRef.current];
-      newUndoStack.pop(); // Remove current state
-      const stateToRestore = newUndoStack[newUndoStack.length - 1];
-      setUndoStack(newUndoStack);
-
-      if (stateToRestore) {
-        fabricCanvas.loadFromJSON(JSON.parse(stateToRestore), () => {
-          fabricCanvas.renderAll();
-          markUnsavedChanges();
-
-          // Update layers based on loaded objects
-          const loadedObjects = fabricCanvas.getObjects() as FabricObject[];
-          const newLayers: Layer[] = loadedObjects.map((obj) => ({
-            id: obj.id || uuidv4(),
-            name: obj.name || "Imported Object",
-            type: (obj.type as Layer["type"]) || "shape",
-            visible: obj.visible !== false,
-            object: obj,
-          }));
-
-          if (!newLayers.find((layer) => layer.type === "background")) {
-            newLayers.unshift({
-              id: uuidv4(),
-              name: "Background",
-              type: "background",
-              visible: true,
-              object: fabricCanvas as unknown as fabric.Object,
-            });
-          }
-
-          setLayers(newLayers);
-        });
-      }
-    } catch (error) {
-      console.error("Error during undo:", error);
-      toast.error("Failed to undo last action");
-    }
-  }, [fabricCanvas, markUnsavedChanges]);
-
-  // Handle redo with improved state tracking
-  const handleRedo = useCallback(() => {
-    if (!fabricCanvas || redoStackRef.current.length === 0) return;
-
-    try {
-      // Get state to restore from redo stack using ref
-      const newRedoStack = [...redoStackRef.current];
-      const stateToRestore = newRedoStack.pop();
-      setRedoStack(newRedoStack);
-
-      if (stateToRestore) {
-        // Save current state to undo stack before applying redo
-        const currentState = JSON.stringify(
-          fabricCanvas.toJSON(["id", "name", "type", "visible"])
-        );
-
-        // Use ref to ensure we have the latest undo stack
-        const newUndoStack = [...undoStackRef.current, currentState];
-        setUndoStack(newUndoStack);
-
-        fabricCanvas.loadFromJSON(JSON.parse(stateToRestore), () => {
-          fabricCanvas.renderAll();
-          markUnsavedChanges();
-
-          // Update layers based on loaded objects
-          const loadedObjects = fabricCanvas.getObjects() as FabricObject[];
-          const newLayers: Layer[] = loadedObjects.map((obj) => ({
-            id: obj.id || uuidv4(),
-            name: obj.name || "Imported Object",
-            type: (obj.type as Layer["type"]) || "shape",
-            visible: obj.visible !== false,
-            object: obj,
-          }));
-
-          if (!newLayers.find((layer) => layer.type === "background")) {
-            newLayers.unshift({
-              id: uuidv4(),
-              name: "Background",
-              type: "background",
-              visible: true,
-              object: fabricCanvas as unknown as fabric.Object,
-            });
-          }
-
-          setLayers(newLayers);
-        });
-      }
-    } catch (error) {
-      console.error("Error during redo:", error);
-      toast.error("Failed to redo action");
-    }
-  }, [fabricCanvas, markUnsavedChanges]);
-
   // Initialize canvas with improved state tracking
   const handleCanvasInitialized = (canvas: fabric.Canvas) => {
     setFabricCanvas(canvas);
-
-    // Save initial state
-    const initialState = JSON.stringify(
-      canvas.toJSON(["id", "name", "type", "visible"])
-    );
-    setUndoStack([initialState]);
-    undoStackRef.current = [initialState];
-
-    // Track object modifications with debounced state saving
-    let modificationTimeout: NodeJS.Timeout;
-
-    const saveStateDebounced = () => {
-      clearTimeout(modificationTimeout);
-      modificationTimeout = setTimeout(() => {
-        saveState(canvas);
-      }, 100); // Debounce time of 100ms
-    };
-
-    canvas.on("object:modified", saveStateDebounced);
-    canvas.on("object:added", saveStateDebounced);
-    canvas.on("object:removed", saveStateDebounced);
-
-    // Track object movement
-    canvas.on("mouse:down", (options) => {
-      if (options.target) {
-        const preModifyState = JSON.stringify(
-          canvas.toJSON(["id", "name", "type", "visible"])
-        );
-        canvas.movementSnapshot = preModifyState;
-      }
-    });
-
-    canvas.on("mouse:up", () => {
-      if (canvas.movementSnapshot) {
-        const currentState = JSON.stringify(
-          canvas.toJSON(["id", "name", "type", "visible"])
-        );
-        if (canvas.movementSnapshot !== currentState) {
-          saveState(canvas);
-        }
-        delete canvas.movementSnapshot;
-      }
-    });
+    
+    // Initialize canvas history
+    initializeHistory(canvas);
   };
 
   // Load initial canvas data when canvas is initialized
@@ -538,23 +371,35 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   // Set up keyboard shortcuts
   useEffect(() => {
     const handleKeyboard = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+      // Ignore keyboard shortcuts when typing in input fields
+      if (e.target instanceof HTMLInputElement || 
+          e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Undo: Ctrl+Z or Cmd+Z
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
-        if (e.shiftKey) {
-          handleRedo();
-        } else {
-          handleUndo();
-        }
+        handleUndo();
+      }
+      
+      // Redo: Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y or Cmd+Y
+      if (((e.ctrlKey || e.metaKey) && e.key === "z" && e.shiftKey) || 
+          ((e.ctrlKey || e.metaKey) && e.key === "y")) {
+        e.preventDefault();
+        handleRedo();
+      }
+
+      // Save: Ctrl+S or Cmd+S
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleSave();
       }
     };
 
     window.addEventListener("keydown", handleKeyboard);
     return () => window.removeEventListener("keydown", handleKeyboard);
-  }, [handleUndo, handleRedo]);
-
-  // Update disabled states for undo/redo buttons
-  const isUndoDisabled = undoStack.length <= 1;
-  const isRedoDisabled = redoStack.length === 0;
+  }, [handleUndo, handleRedo, handleSave]);
 
   // Render active tab content
   const renderActiveTabContent = () => {
@@ -722,7 +567,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Redo (Ctrl+Shift+Z)</p>
+                  <p>Redo (Ctrl+Shift+Z or Ctrl+Y)</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

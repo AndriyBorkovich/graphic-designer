@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { EditorLayout } from "@/components/editor/EditorLayout";
@@ -45,7 +46,12 @@ const EditorPage: React.FC = () => {
 
       if (data) {
         setProjectName(data.name);
-        setCanvasData(data.canvas_data);
+        // Convert canvas_data to string if it's not already
+        if (data.canvas_data) {
+          setCanvasData(typeof data.canvas_data === 'string' 
+            ? data.canvas_data 
+            : JSON.stringify(data.canvas_data));
+        }
         document.title = `${data.name} | Editor`;
       }
     } catch (error: any) {
