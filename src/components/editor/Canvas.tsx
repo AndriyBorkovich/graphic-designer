@@ -3,6 +3,23 @@ import { fabric } from "fabric";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
+// Initialize fabric with eraser support
+import "fabric/src/mixins/eraser_brush.mixin";
+
+// Extend fabric types to include EraserBrush
+declare module "fabric" {
+  namespace fabric {
+    class EraserBrush extends BaseBrush {
+      constructor(canvas: fabric.Canvas);
+      width: number;
+    }
+
+    interface Object {
+      erasable?: boolean;
+    }
+  }
+}
+
 interface Layer {
   id: string;
   name: string;
@@ -288,6 +305,14 @@ export const Canvas: React.FC<CanvasProps> = ({
     }
   }, [activeLayerId, layers, canvas]);
 
+  // Save state after modifications
+  const handleStateChange = (canvas: fabric.Canvas) => {
+    // Notify parent component about state change
+    if (onCanvasInitialized) {
+      onCanvasInitialized(canvas);
+    }
+  };
+
   // Handle tool changes
   useEffect(() => {
     if (!canvas) return;
@@ -328,17 +353,59 @@ export const Canvas: React.FC<CanvasProps> = ({
         break;
 
       case "eraser":
-        // Set up eraser mode - in fabric.js this is just removing selected objects
+        canvas.isDrawingMode = true;
+        try {
+          // Create eraser brush
+          const eraserBrush = new fabric.EraserBrush(canvas);
+          eraserBrush.width = 20;
+          canvas.freeDrawingBrush = eraserBrush;
+
+          // Make all objects erasable
+          canvas.getObjects().forEach((obj) => {
+            if (obj.erasable === undefined) {
+              obj.erasable = true;
+            }
+          });
+        } catch (error) {
+          console.error("Error initializing eraser:", error);
+          toast.error("Could not initialize eraser tool");
+          canvas.isDrawingMode = false;
+        }
+        break;
+
+      default:
+        canvas.isDrawingMode = false;
         break;
     }
+
+    // Set up erasing events
+    canvas.on("erasing:end", (event: any) => {
+      if (!event.targets) return;
+
+      console.log("Erased objects:", event.targets);
+      // Update layers if needed
+      setLayers((prevLayers) => {
+        return prevLayers.map((layer) => {
+          if (event.targets.includes(layer.object)) {
+            // Mark the layer as modified
+            return { ...layer };
+          }
+          return layer;
+        });
+      });
+
+      // Save canvas state after erasing
+      handleStateChange(canvas);
+    });
 
     // Clean up event listeners when tool changes
     return () => {
       canvas.off("mouse:down");
       canvas.off("mouse:move");
       canvas.off("mouse:up");
+      canvas.off("erasing:end");
     };
-  }, [activeTool, canvas]);
+  }, [activeTool, canvas, setLayers]);
 
   // Rectangle Drawing
   const startAddingRect = (e: fabric.IEvent<MouseEvent>) => {
