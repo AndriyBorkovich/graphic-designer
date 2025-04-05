@@ -67,6 +67,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [activeTab, setActiveTab] = useState<string>("tools");
   const [fabricCanvas, setFabricCanvas] = useState<fabric.Canvas | null>(null);
   const [brushColor, setBrushColor] = useState<string>("#000000");
+  const [eraserWidth, setEraserWidth] = useState<number>(20);
   const navigate = useNavigate();
   const { user } = useAuth();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -572,6 +573,19 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
+  // Handle eraser width change
+  const handleEraserWidthChange = (width: number) => {
+    setEraserWidth(width);
+    if (
+      fabricCanvas &&
+      fabricCanvas.isDrawingMode &&
+      fabricCanvas.freeDrawingBrush instanceof fabric.EraserBrush
+    ) {
+      fabricCanvas.freeDrawingBrush.width = width;
+      fabricCanvas.requestRenderAll();
+    }
+  };
+
   // Add text properties state
   const [textProperties, setTextProperties] = useState<{
     fontSize: number;
@@ -660,6 +674,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             onBrushColorChange={handleBrushColorChange}
             textProperties={textProperties}
             onTextPropertyChange={handleTextPropertyChange}
+            eraserWidth={eraserWidth}
+            onEraserWidthChange={handleEraserWidthChange}
           />
         );
       case "colors":

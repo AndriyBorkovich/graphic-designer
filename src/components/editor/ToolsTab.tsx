@@ -48,6 +48,8 @@ interface ToolsTabProps {
     underline?: boolean;
     textAlign?: string;
   };
+  eraserWidth?: number;
+  onEraserWidthChange?: (width: number) => void;
 }
 
 export const ToolsTab: React.FC<ToolsTabProps> = ({
@@ -65,6 +67,8 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
     underline: false,
     textAlign: "left",
   },
+  eraserWidth = 20,
+  onEraserWidthChange,
 }) => {
   const [activeColorTab, setActiveColorTab] = useState<string>("picker");
   const [red, setRed] = useState<number>(0);
@@ -157,17 +161,41 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
         ))}
       </div>
 
+      {/* Eraser Width Control */}
+      {activeTool === "eraser" && (
+        <div className="mt-4 space-y-4">
+          <h4 className="text-sm font-medium mb-2 text-white">Eraser width</h4>
+          <div>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="eraser-width" className="text-xs text-white">
+                Width
+              </Label>
+              <span className="text-xs text-white">{eraserWidth}px</span>
+            </div>
+            <Slider
+              id="eraser-width"
+              min={1}
+              max={100}
+              step={1}
+              value={[eraserWidth]}
+              onValueChange={(value) => onEraserWidthChange?.(value[0])}
+              className="my-2"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Text Properties */}
       {activeTool === "text" && (
         <div className="mt-4 space-y-4">
           <h4 className="text-sm font-medium mb-2 text-white">
-            Text Properties
+            Text properties
           </h4>
 
           {/* Font Family */}
           <div>
             <Label htmlFor="font-family" className="text-xs text-white mb-2">
-              Font Family
+              Font family
             </Label>
             <Select
               value={textProperties.fontFamily}
@@ -192,7 +220,7 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
           <div>
             <div className="flex justify-between items-center">
               <Label htmlFor="font-size" className="text-xs text-white">
-                Font Size
+                Font size
               </Label>
               <span className="text-xs text-white">
                 {textProperties.fontSize}px
@@ -266,7 +294,7 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className={`w-10 h-10 ${
+              className={`w-10 text-white h-10 ${
                 textProperties.textAlign === "left"
                   ? "bg-[#4318D1]"
                   : "bg-gray-800"
@@ -278,10 +306,10 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className={`w-10 h-10 ${
+              className={`w-10 text-white h-10 ${
                 textProperties.textAlign === "center"
                   ? "bg-[#4318D1]"
-                  : "bg-gray-800"
+                  : "bg-[#333333]"
               }`}
               onClick={() => onTextPropertyChange?.("textAlign", "center")}
             >
@@ -290,10 +318,10 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className={`w-10 h-10 ${
+              className={`w-10 text-white h-10 ${
                 textProperties.textAlign === "right"
                   ? "bg-[#4318D1]"
-                  : "bg-gray-800"
+                  : "bg-[#333333]"
               }`}
               onClick={() => onTextPropertyChange?.("textAlign", "right")}
             >
@@ -306,7 +334,7 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
       {/* Brush color picker */}
       {activeTool === "draw" && (
         <div className="mt-4 space-y-4">
-          <h4 className="text-sm font-medium mb-2 text-white">Brush Color</h4>
+          <h4 className="text-sm font-medium mb-2 text-white">Brush color</h4>
 
           <Tabs
             value={activeColorTab}
@@ -415,7 +443,7 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
           {/* Hex input */}
           <div>
             <Label htmlFor="hex-color" className="text-xs text-white">
-              Hex Color
+              Hex color
             </Label>
             <Input
               id="hex-color"
@@ -428,7 +456,7 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
           {/* Recent colors */}
           <div>
             <Label className="text-xs block mb-2 text-white">
-              Recent Colors
+              Recent colors
             </Label>
             <div className="flex space-x-2">
               {recentColors.map((color, index) => (

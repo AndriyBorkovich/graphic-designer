@@ -208,7 +208,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
 
   return (
     <div className="space-y-4">
-      <h3 className="font-medium mb-2 text-white">Color Selection</h3>
+      <h3 className="font-medium mb-2 text-white">Color selection</h3>
 
       {/* Color target selection */}
       <div className="flex mb-3">
@@ -348,7 +348,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
       {/* Hex input */}
       <div>
         <Label htmlFor="hex-color" className="text-xs text-white">
-          Hex Color
+          Hex color
         </Label>
         <Input
           id="hex-color"
@@ -385,7 +385,7 @@ export const ColorPickerTab: React.FC<ColorPickerTabProps> = ({
 
       {/* Recent colors */}
       <div>
-        <Label className="text-xs block mb-2 text-white">Recent Colors</Label>
+        <Label className="text-xs block mb-2 text-white">Recent colors</Label>
         <div className="flex space-x-2">
           {recentColors.map((color, index) => (
             <div

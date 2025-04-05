@@ -38,6 +38,7 @@ interface CanvasProps {
   setActiveLayerId: (layerId: string | null) => void;
   onCanvasInitialized?: (canvas: fabric.Canvas) => void;
   brushColor?: string;
+  eraserWidth?: number;
   textProperties?: {
     fontSize?: number;
     fontFamily?: string;
@@ -62,6 +63,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   setActiveLayerId,
   onCanvasInitialized,
   brushColor = "#000000",
+  eraserWidth = 20,
   textProperties = {
     fontSize: 18,
     fontFamily: "Arial",
@@ -419,7 +421,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         try {
           // Create eraser brush
           const eraserBrush = new fabric.EraserBrush(canvas);
-          eraserBrush.width = 20;
+          eraserBrush.width = eraserWidth;
           canvas.freeDrawingBrush = eraserBrush;
 
           // Make all objects erasable
@@ -466,7 +468,7 @@ export const Canvas: React.FC<CanvasProps> = ({
       canvas.off("mouse:up");
       canvas.off("erasing:end");
     };
-  }, [activeTool, canvas, setLayers, brushColor]);
+  }, [activeTool, canvas, setLayers, brushColor, eraserWidth]);
 
   // Update brush color when it changes
   useEffect(() => {
