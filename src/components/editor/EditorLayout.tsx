@@ -601,7 +601,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
+    <div className="flex h-[calc(100vh-75px)] w-full overflow-hidden">
       <div className="flex h-full">
         <div className="bg-gray-900 border-r border-gray-800">
           <SidebarNav
@@ -615,9 +615,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 h-full">
-        <div className="flex justify-between items-center p-2 border-b bg-[#2A2A2A] text-white">
-          <div className="ml-2 font-medium truncate">
+      <div className="flex flex-col flex-1 min-w-0">
+        <div className="flex justify-between items-center p-2 border-b bg-[#2A2A2A] text-white shrink-0">
+          <div className="ml-2 font-medium truncate flex-shrink">
             {projectName}
             {hasUnsavedChanges && (
               <span className="ml-2 text-yellow-400">•</span>
@@ -628,7 +628,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -763,7 +763,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </div>
         </div>
         <div className="flex-1 overflow-hidden bg-gray-800">
-          <div className="h-full w-full flex items-center justify-center">
+          <div className="h-full w-full flex items-center justify-center p-4">
             <Canvas
               activeTool={activeTool}
               zoom={zoom}

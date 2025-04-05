@@ -279,15 +279,42 @@ export const Canvas: React.FC<CanvasProps> = ({
     if (!currentCanvas || !canvasContainerRef.current) return;
 
     try {
-      const containerWidth = canvasContainerRef.current.clientWidth;
-      const containerHeight = canvasContainerRef.current.clientHeight;
-      const zoomRatio = zoom / 100;
+      const containerWidth = canvasContainerRef.current.clientWidth - 40; // Account for padding
+      const containerHeight = canvasContainerRef.current.clientHeight - 40;
 
+      // Calculate scale to fit the canvas in the container
+      const scaleX = containerWidth / DEFAULT_WIDTH;
+      const scaleY = containerHeight / DEFAULT_HEIGHT;
+      const scale = Math.min(scaleX, scaleY);
+
+      // Apply zoom
+      const zoomRatio = zoom / 100;
+      const finalScale = scale * zoomRatio;
+
+      // Set the canvas dimensions
       currentCanvas.setDimensions({
-        width: containerWidth,
-        height: containerHeight,
+        width: DEFAULT_WIDTH,
+        height: DEFAULT_HEIGHT,
       });
-      currentCanvas.setZoom(zoomRatio);
+
+      // Set zoom level
+      currentCanvas.setZoom(finalScale);
+
+      // Center the canvas
+      const vpw = containerWidth;
+      const vph = containerHeight;
+      const cw = DEFAULT_WIDTH * finalScale;
+      const ch = DEFAULT_HEIGHT * finalScale;
+
+      currentCanvas.viewportTransform = [
+        finalScale,
+        0,
+        0,
+        finalScale,
+        (vpw - cw) / 2,
+        (vph - ch) / 2,
+      ];
+
       currentCanvas.requestRenderAll();
     } catch (error) {
       console.error("Error updating canvas zoom:", error);
@@ -564,9 +591,16 @@ export const Canvas: React.FC<CanvasProps> = ({
         backgroundColor: "white",
         position: "relative",
         padding: "20px",
+        overflow: "hidden", // Prevent scrolling
       }}
     >
-      <canvas ref={canvasRef} style={{ maxWidth: "100%", maxHeight: "100%" }} />
+      <canvas
+        ref={canvasRef}
+        style={{
+          maxWidth: "100%",
+          maxHeight: "100%",
+        }}
+      />
       {!canvas && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-70">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mb-3"></div>
