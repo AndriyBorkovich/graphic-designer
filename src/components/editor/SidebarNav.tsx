@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,32 +54,34 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   ];
 
   return (
-    <ScrollArea className={`bg-[#2A2A2A] p-2 h-full ${className}`}>
-      <div className="flex flex-col items-center gap-2">
-        {tabs
-          .filter((_, index) => !hideGeneralTabs || index >= 3)
-          .map((tab) => (
-            <Tooltip key={tab.id}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`w-12 h-12 ${
-                    activeTab === tab.id
-                      ? "bg-[#4318D1] text-white hover:bg-[#4318D1]/60"
-                      : "text-gray-400 hover:text-white hover:bg-[#4318D1]/60"
-                  }`}
-                  onClick={() =>
-                    tab.action ? tab.action() : setActiveTab(tab.id)
-                  }
-                >
-                  <tab.icon className="w-6 h-6" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">{tab.label}</TooltipContent>
-            </Tooltip>
-          ))}
-      </div>
-    </ScrollArea>
+    <div className="bg-[#2A2A2A] h-full flex flex-col">
+      <ScrollArea className="flex-1 p-2">
+        <div className="flex flex-col items-center gap-2">
+          {tabs
+            .filter((_, index) => !hideGeneralTabs || index >= 3)
+            .map((tab) => (
+              <Tooltip key={tab.id}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`w-12 h-12 ${
+                      activeTab === tab.id
+                        ? "bg-[#4318D1] text-white hover:bg-[#4318D1]/60"
+                        : "text-gray-400 hover:text-white hover:bg-[#4318D1]/60"
+                    }`}
+                    onClick={() =>
+                      tab.action ? tab.action() : setActiveTab(tab.id)
+                    }
+                  >
+                    <tab.icon className="w-6 h-6" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">{tab.label}</TooltipContent>
+              </Tooltip>
+            ))}
+        </div>
+      </ScrollArea>
+    </div>
   );
 };
