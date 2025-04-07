@@ -1,34 +1,18 @@
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useBeforeUnload } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Canvas } from "./Canvas";
 import { SidebarNav } from "./SidebarNav";
 import { ToolsTab } from "./ToolsTab";
-import { ColorPickerTab } from "./ColorPickerTab";
+import { ColorsTab } from "./ColorsTab";
 import { LayersTab } from "./LayersTab";
-import { Undo, Redo, ZoomIn, ZoomOut, Trash2, Save } from "lucide-react";
+import { Undo, Redo, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { fabric } from "fabric";
-import { useAuth } from "@/contexts/AuthContext";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { v4 as uuidv4 } from "uuid";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { ConfirmDialog } from "../dialogs/ConfirmDialog";
-
-// Extend fabric.Canvas type to include movementSnapshot
-declare module "fabric" {
-  namespace fabric {
-    interface Canvas {
-      movementSnapshot?: string;
-    }
-  }
-}
+import { useHistoryManager } from "@/hooks/useHistoryManager";
 
 interface Layer {
   id: string;
@@ -36,13 +20,6 @@ interface Layer {
   type: "background" | "shape" | "text" | "image" | "adjustment";
   visible: boolean;
   object: fabric.Object;
-}
-
-interface FabricObject extends fabric.Object {
-  id?: string;
-  name?: string;
-  type?: string;
-  visible?: boolean;
 }
 
 interface EditorLayoutProps {
@@ -60,547 +37,27 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   projectName = "Untitled Project",
   initialCanvasData,
 }) => {
+  const [activeTab, setActiveTab] = useState<string>("tools");
   const [zoom, setZoom] = useState<number>(100);
-  const [selectedObject, setSelectedObject] = useState<any>(null);
+  const [selectedObject, setSelectedObject] = useState<any[]>([]);
   const [layers, setLayers] = useState<Layer[]>([]);
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("tools");
   const [fabricCanvas, setFabricCanvas] = useState<fabric.Canvas | null>(null);
   const [brushColor, setBrushColor] = useState<string>("#000000");
-  const [eraserWidth, setEraserWidth] = useState<number>(20);
   const [brushWidth, setBrushWidth] = useState<number>(5);
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(true);
-  const [undoStack, setUndoStack] = useState<string[]>([]);
-  const [redoStack, setRedoStack] = useState<string[]>([]);
-
-  // New state for navigation confirmation dialog
-  const [showNavigationDialog, setShowNavigationDialog] = useState(false);
-  const [navigationTarget, setNavigationTarget] = useState<string>("");
-
-  // Refs to track current state
-  const undoStackRef = useRef<string[]>([]);
-  const redoStackRef = useRef<string[]>([]);
-
-  // Update refs when states change
-  useEffect(() => {
-    undoStackRef.current = undoStack;
-  }, [undoStack]);
-
-  useEffect(() => {
-    redoStackRef.current = redoStack;
-  }, [redoStack]);
-
-  // Track unsaved changes
-  const markUnsavedChanges = useCallback(() => {
-    setHasUnsavedChanges(true);
-  }, []);
-
-  // Warn about unsaved changes when leaving
-  useBeforeUnload(
-    useCallback(
-      (event) => {
-        if (hasUnsavedChanges) {
-          event.preventDefault();
-          return (event.returnValue =
-            "You have unsaved changes. Are you sure you want to leave?");
-        }
-      },
-      [hasUnsavedChanges]
-    )
-  );
-
-  // Handle zoom in function
-  const handleZoomIn = () => {
-    try {
-      if (zoom < 200) {
-        setZoom(zoom + 10);
-      } else {
-        toast.info("Maximum zoom reached");
-      }
-    } catch (error) {
-      console.error("Error zooming in:", error);
-      toast.error("Error while zooming in");
-    }
-  };
-
-  // Handle zoom out function
-  const handleZoomOut = () => {
-    try {
-      if (zoom > 10) {
-        setZoom(zoom - 10);
-      } else {
-        toast.info("Minimum zoom reached");
-      }
-    } catch (error) {
-      console.error("Error zooming out:", error);
-      toast.error("Error while zooming out");
-    }
-  };
-
-  // Save canvas state helper function with improved state handling
-  const saveState = useCallback(
-    (canvas: fabric.Canvas) => {
-      const currentState = JSON.stringify(
-        canvas.toJSON(["id", "name", "type", "visible"])
-      );
-
-      // Use ref to ensure we have the latest state
-      const newUndoStack = [...undoStackRef.current, currentState];
-      setUndoStack(newUndoStack);
-      setRedoStack([]); // Clear redo stack when new action is performed
-      markUnsavedChanges();
-    },
-    [markUnsavedChanges]
-  );
-
-  // Handle undo with improved state tracking
-  const handleUndo = useCallback(() => {
-    if (!fabricCanvas || undoStackRef.current.length <= 1) return;
-
-    try {
-      // Save current state to redo stack
-      const currentState = JSON.stringify(
-        fabricCanvas.toJSON(["id", "name", "type", "visible"])
-      );
-
-      // Use refs to ensure we have the latest states
-      const newRedoStack = [...redoStackRef.current, currentState];
-      setRedoStack(newRedoStack);
-
-      // Pop the last state from undo stack
-      const newUndoStack = [...undoStackRef.current];
-      newUndoStack.pop(); // Remove current state
-      const stateToRestore = newUndoStack[newUndoStack.length - 1];
-      setUndoStack(newUndoStack);
-
-      if (stateToRestore) {
-        fabricCanvas.loadFromJSON(JSON.parse(stateToRestore), () => {
-          fabricCanvas.renderAll();
-          markUnsavedChanges();
-
-          // Update layers based on loaded objects
-          const loadedObjects = fabricCanvas.getObjects() as FabricObject[];
-          const newLayers: Layer[] = loadedObjects.map((obj) => ({
-            id: obj.id || uuidv4(),
-            name: obj.name || "Imported Object",
-            type: (obj.type as Layer["type"]) || "shape",
-            visible: obj.visible !== false,
-            object: obj,
-          }));
-
-          if (!newLayers.find((layer) => layer.type === "background")) {
-            newLayers.unshift({
-              id: uuidv4(),
-              name: "Background",
-              type: "background",
-              visible: true,
-              object: fabricCanvas as unknown as fabric.Object,
-            });
-          }
-
-          setLayers(newLayers);
-        });
-      }
-    } catch (error) {
-      console.error("Error during undo:", error);
-      toast.error("Failed to undo last action");
-    }
-  }, [fabricCanvas, markUnsavedChanges]);
-
-  // Handle redo with improved state tracking
-  const handleRedo = useCallback(() => {
-    if (!fabricCanvas || redoStackRef.current.length === 0) return;
-
-    try {
-      // Get state to restore from redo stack using ref
-      const newRedoStack = [...redoStackRef.current];
-      const stateToRestore = newRedoStack.pop();
-      setRedoStack(newRedoStack);
-
-      if (stateToRestore) {
-        // Save current state to undo stack before applying redo
-        const currentState = JSON.stringify(
-          fabricCanvas.toJSON(["id", "name", "type", "visible"])
-        );
-
-        // Use ref to ensure we have the latest undo stack
-        const newUndoStack = [...undoStackRef.current, currentState];
-        setUndoStack(newUndoStack);
-
-        fabricCanvas.loadFromJSON(JSON.parse(stateToRestore), () => {
-          fabricCanvas.renderAll();
-          markUnsavedChanges();
-
-          // Update layers based on loaded objects
-          const loadedObjects = fabricCanvas.getObjects() as FabricObject[];
-          const newLayers: Layer[] = loadedObjects.map((obj) => ({
-            id: obj.id || uuidv4(),
-            name: obj.name || "Imported Object",
-            type: (obj.type as Layer["type"]) || "shape",
-            visible: obj.visible !== false,
-            object: obj,
-          }));
-
-          if (!newLayers.find((layer) => layer.type === "background")) {
-            newLayers.unshift({
-              id: uuidv4(),
-              name: "Background",
-              type: "background",
-              visible: true,
-              object: fabricCanvas as unknown as fabric.Object,
-            });
-          }
-
-          setLayers(newLayers);
-        });
-      }
-    } catch (error) {
-      console.error("Error during redo:", error);
-      toast.error("Failed to redo action");
-    }
-  }, [fabricCanvas, markUnsavedChanges]);
-
-  // Initialize canvas with improved state tracking
-  const handleCanvasInitialized = (canvas: fabric.Canvas) => {
-    setFabricCanvas(canvas);
-
-    // Save initial state
-    const initialState = JSON.stringify(
-      canvas.toJSON(["id", "name", "type", "visible"])
-    );
-    setUndoStack([initialState]);
-    undoStackRef.current = [initialState];
-
-    // Track object modifications with debounced state saving
-    let modificationTimeout: NodeJS.Timeout;
-
-    const saveStateDebounced = () => {
-      clearTimeout(modificationTimeout);
-      modificationTimeout = setTimeout(() => {
-        saveState(canvas);
-      }, 100); // Debounce time of 100ms
-    };
-
-    canvas.on("object:modified", saveStateDebounced);
-    canvas.on("object:added", saveStateDebounced);
-    canvas.on("object:removed", saveStateDebounced);
-
-    // Track object movement
-    canvas.on("mouse:down", (options) => {
-      if (options.target) {
-        const preModifyState = JSON.stringify(
-          canvas.toJSON(["id", "name", "type", "visible"])
-        );
-        canvas.movementSnapshot = preModifyState;
-      }
-    });
-
-    canvas.on("mouse:up", () => {
-      if (canvas.movementSnapshot) {
-        const currentState = JSON.stringify(
-          canvas.toJSON(["id", "name", "type", "visible"])
-        );
-        if (canvas.movementSnapshot !== currentState) {
-          saveState(canvas);
-        }
-        delete canvas.movementSnapshot;
-      }
-    });
-  };
-
-  // Load initial canvas data when canvas is initialized
-  useEffect(() => {
-    if (!fabricCanvas || !initialCanvasData) return;
-
-    try {
-      const canvasState = JSON.parse(initialCanvasData);
-      fabricCanvas.loadFromJSON(canvasState, () => {
-        fabricCanvas.renderAll();
-
-        // Update layers based on loaded objects
-        const loadedObjects = fabricCanvas.getObjects() as FabricObject[];
-        const newLayers: Layer[] = loadedObjects.map((obj) => ({
-          id: obj.id || uuidv4(),
-          name: obj.name || "Imported Object",
-          type: (obj.type as Layer["type"]) || "shape",
-          visible: obj.visible !== false,
-          object: obj,
-        }));
-
-        // Add background layer if not present
-        if (!newLayers.find((layer) => layer.type === "background")) {
-          newLayers.unshift({
-            id: uuidv4(),
-            name: "Background",
-            type: "background",
-            visible: true,
-            object: fabricCanvas as unknown as fabric.Object,
-          });
-        }
-
-        setLayers(newLayers);
-        toast.success("Project loaded successfully");
-      });
-    } catch (error) {
-      console.error("Error loading canvas state:", error);
-      toast.error("Failed to load project data");
-    }
-  }, [fabricCanvas, initialCanvasData]);
-
-  // Save project data to Supabase
-  const handleSave = async () => {
-    if (!user || !projectId) {
-      toast.error("Unable to save: No active project or user session");
-      return;
-    }
-
-    if (!fabricCanvas) {
-      toast.error("Canvas not initialized");
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-
-      // Get canvas state directly from the Fabric.js instance
-      const canvasState = JSON.stringify(
-        fabricCanvas.toJSON(["id", "name", "type", "visible"])
-      );
-      const currentTime = new Date().toISOString();
-
-      // Save to Supabase
-      const { error: updateError } = await supabase
-        .from("projects")
-        .update({
-          canvas_data: canvasState,
-          updated_at: currentTime,
-          last_modified_by: user.id,
-        })
-        .eq("id", projectId)
-        .eq("user_id", user.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      // Update state
-      setHasUnsavedChanges(false);
-      setLastSavedAt(new Date());
-      toast.success(`Project "${projectName}" saved successfully`);
-    } catch (error: any) {
-      console.error("Error saving project:", error);
-
-      if (error.code === "PGRST116") {
-        toast.error("You don't have permission to save this project");
-      } else if (error.code === "23505") {
-        toast.error("A project with this name already exists");
-      } else if (error.message?.includes("network")) {
-        toast.error("Network error. Please check your connection");
-      } else {
-        toast.error("Failed to save project. Please try again");
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Auto-save functionality
-  useEffect(() => {
-    if (hasUnsavedChanges && isAutoSaveEnabled) {
-      const timeoutId = setTimeout(() => {
-        handleSave();
-      }, 15000); // Auto-save after 15 seconds of no changes
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [hasUnsavedChanges, isAutoSaveEnabled]);
-
-  // Object update handler
-  const handleObjectUpdate = (property: string, value: any) => {
-    if (!selectedObject) return;
-
-    // Check if the selected object is the background layer
-    const isBackground =
-      selectedObject ===
-      layers.find((layer) => layer.type === "background")?.object;
-
-    if (isBackground && property === "fill") {
-      // For background color changes, update the canvas background color
-      if (fabricCanvas) {
-        fabricCanvas.setBackgroundColor(value, () => {
-          fabricCanvas.renderAll();
-        });
-      }
-    } else {
-      // Handle both single object and multiple object selections
-      const objectsToUpdate = Array.isArray(selectedObject)
-        ? selectedObject
-        : [selectedObject];
-
-      objectsToUpdate.forEach((obj) => {
-        if (obj && typeof obj.set === "function") {
-          obj.set(property, value);
-          if (obj.canvas) {
-            obj.canvas.renderAll();
-          }
-        }
-      });
-    }
-
-    markUnsavedChanges();
-  };
-
-  // Layer management functions
-  const handleLayerSelect = (layerId: string) => {
-    setActiveLayerId(layerId);
-    const layer = layers.find((l) => l.id === layerId);
-    if (layer && layer.type !== "background") {
-      setSelectedObject(layer.object);
-    } else {
-      setSelectedObject(null);
-    }
-  };
-
-  const handleLayerVisibilityToggle = (layerId: string) => {
-    setLayers((prevLayers) =>
-      prevLayers.map((layer) =>
-        layer.id === layerId ? { ...layer, visible: !layer.visible } : layer
-      )
-    );
-  };
-
-  const handleLayerAdd = () => {
-    toast.info("Layer adding functionality to be implemented");
-  };
-
-  const handleLayerDelete = (layerId: string) => {
-    const layerToDelete = layers.find((l) => l.id === layerId);
-
-    if (!layerToDelete) return;
-
-    // Can't delete background
-    if (layerToDelete.type === "background") {
-      toast.error("Cannot delete background layer");
-      return;
-    }
-
-    // Remove the object from canvas
-    if (layerToDelete.object.canvas) {
-      layerToDelete.object.canvas.remove(layerToDelete.object);
-    }
-
-    // Remove the layer from state
-    setLayers((prevLayers) =>
-      prevLayers.filter((layer) => layer.id !== layerId)
-    );
-
-    // Clear selection if the deleted layer was selected
-    if (activeLayerId === layerId) {
-      setActiveLayerId(null);
-      setSelectedObject(null);
-    }
-
-    toast.success("Layer deleted");
-
-    markUnsavedChanges();
-  };
-
-  const handleLayerMoveUp = (layerId: string) => {
-    const layerIndex = layers.findIndex((l) => l.id === layerId);
-    if (layerIndex < layers.length - 1 && layerIndex !== -1) {
-      const newLayers = [...layers];
-      const temp = newLayers[layerIndex];
-      newLayers[layerIndex] = newLayers[layerIndex + 1];
-      newLayers[layerIndex + 1] = temp;
-
-      // Update z-index in canvas
-      if (temp.object.canvas && temp.type !== "background") {
-        temp.object.bringForward();
-      }
-
-      setLayers(newLayers);
-    }
-  };
-
-  const handleLayerMoveDown = (layerId: string) => {
-    const layerIndex = layers.findIndex((l) => l.id === layerId);
-    if (layerIndex > 0) {
-      const newLayers = [...layers];
-      const temp = newLayers[layerIndex];
-      newLayers[layerIndex] = newLayers[layerIndex - 1];
-      newLayers[layerIndex - 1] = temp;
-
-      // Update z-index in canvas
-      if (temp.object.canvas && temp.type !== "background") {
-        temp.object.sendBackwards();
-      }
-
-      setLayers(newLayers);
-    }
-  };
-
-  // Set up keyboard shortcuts
-  useEffect(() => {
-    const handleKeyboard = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
-        e.preventDefault();
-        if (e.shiftKey) {
-          handleRedo();
-        } else {
-          handleUndo();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyboard);
-    return () => window.removeEventListener("keydown", handleKeyboard);
-  }, [handleUndo, handleRedo]);
-
-  // Update disabled states for undo/redo buttons
-  const isUndoDisabled = undoStack.length <= 1;
-  const isRedoDisabled = redoStack.length === 0;
-
-  // Handle brush color change
-  const handleBrushColorChange = (color: string) => {
-    setBrushColor(color);
-    if (fabricCanvas && fabricCanvas.isDrawingMode) {
-      fabricCanvas.freeDrawingBrush.color = color;
-      fabricCanvas.renderAll();
-    }
-  };
-
-  // Handle eraser width change
-  const handleEraserWidthChange = (width: number) => {
-    setEraserWidth(width);
-    if (
-      fabricCanvas &&
-      fabricCanvas.isDrawingMode &&
-      fabricCanvas.freeDrawingBrush instanceof fabric.EraserBrush
-    ) {
-      fabricCanvas.freeDrawingBrush.width = width;
-      fabricCanvas.requestRenderAll();
-    }
-  };
-
-  // Handle brush width change
-  const handleBrushWidthChange = (width: number) => {
-    setBrushWidth(width);
-    if (
-      fabricCanvas &&
-      fabricCanvas.isDrawingMode &&
-      fabricCanvas.freeDrawingBrush
-    ) {
-      fabricCanvas.freeDrawingBrush.width = width;
-      fabricCanvas.requestRenderAll();
-    }
-  };
-
-  // Add text properties state
+  const [eraserWidth, setEraserWidth] = useState<number>(20);
+  
+  // Get the history manager hook
+  const { 
+    canUndo, 
+    canRedo, 
+    pushState, 
+    undo, 
+    redo, 
+    currentState
+  } = useHistoryManager();
+
+  // Text properties
   const [textProperties, setTextProperties] = useState<{
     fontSize: number;
     fontFamily: string;
@@ -617,111 +74,219 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     textAlign: "left",
   });
 
-  // Handle text property changes
-  const handleTextPropertyChange = (property: string, value: any) => {
-    setTextProperties((prev) => ({ ...prev, [property]: value }));
-
-    // Update selected object if it's a text object
-    if (selectedObject && Array.isArray(selectedObject)) {
-      selectedObject.forEach((obj) => {
-        if (obj && obj.type === "textbox") {
-          switch (property) {
-            case "fontSize":
-              obj.set("fontSize", value);
-              break;
-            case "fontFamily":
-              obj.set("fontFamily", value);
-              break;
-            case "fontWeight":
-              obj.set("fontWeight", value);
-              break;
-            case "fontStyle":
-              obj.set("fontStyle", value);
-              break;
-            case "underline":
-              obj.set("underline", value);
-              break;
-            case "textAlign":
-              obj.set("textAlign", value);
-              break;
-          }
-        }
-      });
-
-      if (fabricCanvas) {
-        fabricCanvas.requestRenderAll();
-        markUnsavedChanges();
-      }
-    }
+  // Zoom functions
+  const handleZoomIn = () => {
+    setZoom(prevZoom => Math.min(prevZoom + 10, 200));
   };
 
-  // Update text properties when selecting a text object
-  useEffect(() => {
-    if (
-      selectedObject &&
-      Array.isArray(selectedObject) &&
-      selectedObject.length === 1
-    ) {
-      const obj = selectedObject[0];
-      if (obj && obj.type === "textbox") {
-        setTextProperties({
-          fontSize: obj.fontSize || 18,
-          fontFamily: obj.fontFamily || "Arial",
-          fontWeight: obj.fontWeight || "normal",
-          fontStyle: obj.fontStyle || "normal",
-          underline: obj.underline || false,
-          textAlign: obj.textAlign || "left",
-        });
-      }
+  const handleZoomOut = () => {
+    setZoom(prevZoom => Math.max(prevZoom - 10, 10));
+  };
+
+  const handleZoomChange = (value: number[]) => {
+    setZoom(value[0]);
+  };
+
+  // Canvas initialization handler
+  const handleCanvasInitialized = useCallback((canvasInstance: fabric.Canvas) => {
+    setFabricCanvas(canvasInstance);
+    
+    // Set up event listeners for history tracking
+    if (canvasInstance) {
+      let ignoreObjectModified = false;
+      let isFirstRender = true;
+      
+      // Save initial state after canvas is properly rendered
+      setTimeout(() => {
+        if (isFirstRender) {
+          const initialCanvasState = JSON.stringify(
+            canvasInstance.toJSON(['id', 'name', 'type', 'visible'])
+          );
+          pushState(initialCanvasState);
+          isFirstRender = false;
+        }
+      }, 500);
+
+      // Track object modifications
+      canvasInstance.on('object:modified', () => {
+        if (ignoreObjectModified) return;
+        
+        const currentCanvasState = JSON.stringify(
+          canvasInstance.toJSON(['id', 'name', 'type', 'visible'])
+        );
+        pushState(currentCanvasState);
+      });
+
+      // Track object additions
+      canvasInstance.on('object:added', () => {
+        const currentCanvasState = JSON.stringify(
+          canvasInstance.toJSON(['id', 'name', 'type', 'visible'])
+        );
+        pushState(currentCanvasState);
+      });
+
+      // Track object removals
+      canvasInstance.on('object:removed', () => {
+        const currentCanvasState = JSON.stringify(
+          canvasInstance.toJSON(['id', 'name', 'type', 'visible'])
+        );
+        pushState(currentCanvasState);
+      });
     }
-  }, [selectedObject]);
+  }, [pushState]);
+
+  // Handle undo with improved canvas state restoration
+  const handleUndo = useCallback(() => {
+    if (!fabricCanvas || !canUndo) return;
+    
+    try {
+      // Get previous state from history manager
+      const previousState = undo();
+      if (!previousState) return;
+      
+      // Parse the state and load it into canvas
+      fabricCanvas.loadFromJSON(JSON.parse(previousState), () => {
+        fabricCanvas.renderAll();
+        toast.info("Undo successful");
+        
+        // Update layers based on current canvas objects
+        updateLayersFromCanvas(fabricCanvas);
+      });
+    } catch (error) {
+      console.error("Error during undo:", error);
+      toast.error("Failed to undo");
+    }
+  }, [fabricCanvas, canUndo, undo]);
+
+  // Handle redo with improved canvas state restoration
+  const handleRedo = useCallback(() => {
+    if (!fabricCanvas || !canRedo) return;
+    
+    try {
+      // Get next state from history manager
+      const nextState = redo();
+      if (!nextState) return;
+      
+      // Parse the state and load it into canvas
+      fabricCanvas.loadFromJSON(JSON.parse(nextState), () => {
+        fabricCanvas.renderAll();
+        toast.info("Redo successful");
+        
+        // Update layers based on current canvas objects
+        updateLayersFromCanvas(fabricCanvas);
+      });
+    } catch (error) {
+      console.error("Error during redo:", error);
+      toast.error("Failed to redo");
+    }
+  }, [fabricCanvas, canRedo, redo]);
+
+  // Function to update layers state based on canvas objects
+  const updateLayersFromCanvas = (canvas: fabric.Canvas) => {
+    const objects = canvas.getObjects();
+    const newLayers: Layer[] = objects.map((obj: any) => {
+      return {
+        id: obj.id || Math.random().toString(36).substr(2, 9),
+        name: obj.name || getObjectTypeName(obj),
+        type: getLayerType(obj),
+        visible: obj.visible !== false,
+        object: obj,
+      };
+    });
+    
+    // Add background layer if not present
+    if (!newLayers.find(l => l.type === "background")) {
+      newLayers.unshift({
+        id: "background",
+        name: "Background",
+        type: "background",
+        visible: true,
+        object: canvas as unknown as fabric.Object,
+      });
+    }
+    
+    setLayers(newLayers);
+  };
+
+  // Determine object type name for layer display
+  const getObjectTypeName = (obj: fabric.Object): string => {
+    if (obj instanceof fabric.Rect) return "Rectangle";
+    if (obj instanceof fabric.Circle) return "Circle";
+    if (obj instanceof fabric.Text) return "Text";
+    if (obj instanceof fabric.Image) return "Image";
+    if (obj instanceof fabric.Path) return "Path";
+    return "Shape";
+  };
+
+  // Determine layer type from object
+  const getLayerType = (obj: fabric.Object): Layer["type"] => {
+    if (obj instanceof fabric.Rect || obj instanceof fabric.Circle || obj instanceof fabric.Path) {
+      return "shape";
+    }
+    if (obj instanceof fabric.Text) {
+      return "text";
+    }
+    if (obj instanceof fabric.Image) {
+      return "image";
+    }
+    return "shape";
+  };
+
+  // Handle keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault();
+        
+        if (e.shiftKey) {
+          // Ctrl/Cmd + Shift + Z -> Redo
+          handleRedo();
+        } else {
+          // Ctrl/Cmd + Z -> Undo
+          handleUndo();
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
+
+  // Handle text property changes
+  const handleTextPropertyChange = (property: string, value: any) => {
+    setTextProperties(prev => ({
+      ...prev,
+      [property]: value
+    }));
+  };
 
   // Render active tab content
   const renderActiveTabContent = () => {
     switch (activeTab) {
       case "tools":
         return (
-          <ToolsTab
+          <ToolsTab 
             activeTool={activeTool}
             setActiveTool={setActiveTool}
             brushColor={brushColor}
             brushWidth={brushWidth}
-            onBrushWidthChange={handleBrushWidthChange}
-            onBrushColorChange={handleBrushColorChange}
+            onBrushColorChange={setBrushColor}
+            onBrushWidthChange={setBrushWidth}
+            eraserWidth={eraserWidth}
+            onEraserWidthChange={setEraserWidth}
             textProperties={textProperties}
             onTextPropertyChange={handleTextPropertyChange}
-            eraserWidth={eraserWidth}
-            onEraserWidthChange={handleEraserWidthChange}
           />
         );
       case "colors":
-        return (
-          <ColorPickerTab
-            selectedObject={
-              activeTool === "draw"
-                ? { type: "brush", color: brushColor }
-                : selectedObject
-            }
-            onColorChange={(property, color) => {
-              if (activeTool === "draw") {
-                handleBrushColorChange(color);
-              } else {
-                handleObjectUpdate(property, color);
-              }
-            }}
-          />
-        );
+        return <ColorsTab />;
       case "layers":
         return (
           <LayersTab
             layers={layers}
+            setLayers={setLayers}
             activeLayerId={activeLayerId}
-            onLayerSelect={handleLayerSelect}
-            onLayerVisibilityToggle={handleLayerVisibilityToggle}
-            onLayerAdd={handleLayerAdd}
-            onLayerDelete={handleLayerDelete}
-            onLayerMoveUp={handleLayerMoveUp}
-            onLayerMoveDown={handleLayerMoveDown}
+            setActiveLayerId={setActiveLayerId}
           />
         );
       default:
@@ -729,234 +294,92 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   };
 
-  // Updated navigation function
-  const navigateToProjects = () => {
-    if (hasUnsavedChanges) {
-      setNavigationTarget("/projects");
-      setShowNavigationDialog(true);
-    } else {
-      navigate("/projects");
-    }
-  };
-
-  const navigateToDocumentation = () => {
-    if (hasUnsavedChanges) {
-      setNavigationTarget("/documentation");
-      setShowNavigationDialog(true);
-    } else {
-      navigate("/documentation");
-    }
-  };
-
-  const handleConfirmNavigation = () => {
-    navigate(navigationTarget);
-  };
-
   return (
-    <div className="flex h-full w-full overflow-hidden">
-      <div className="flex h-full">
-        <div className="bg-gray-900 border-r border-gray-800">
-          <SidebarNav
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            onProjectsClick={navigateToProjects}
-            onDocumentationClick={navigateToDocumentation}
-          />
-        </div>
-        <div className="bg-[#2A2A2A] w-64 p-4 border-r border-gray-800">
-          {renderActiveTabContent()}
-        </div>
-      </div>
-
-      <div className="flex flex-col flex-1 min-w-0">
-        <div className="flex justify-between items-center p-2 border-b bg-[#2A2A2A] text-white shrink-0">
-          <div className="ml-2 font-medium truncate flex-shrink">
-            {projectName}
-            {hasUnsavedChanges && (
-              <span className="ml-2 text-yellow-400">•</span>
-            )}
-            {lastSavedAt && (
-              <span className="ml-2 text-sm text-gray-400">
-                Last saved: {lastSavedAt.toLocaleTimeString()}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="Save Project"
-                    onClick={handleSave}
-                    disabled={isSaving || !hasUnsavedChanges}
-                    className={cn(
-                      isSaving && "animate-pulse",
-                      !hasUnsavedChanges && "opacity-50"
-                    )}
-                  >
-                    <Save className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Save project (Ctrl+S)</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsAutoSaveEnabled(!isAutoSaveEnabled)}
-                    className={cn(
-                      "text-xs px-2 h-8",
-                      isAutoSaveEnabled
-                        ? "bg-gray-700/50 text-gray-200"
-                        : "bg-transparent text-gray-400 hover:text-gray-200"
-                    )}
-                  >
-                    Auto
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{isAutoSaveEnabled ? "Disable" : "Enable"} auto-save</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleUndo}
-                    disabled={isUndoDisabled}
-                    className={cn(isUndoDisabled && "opacity-50")}
-                  >
-                    <Undo className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Undo (Ctrl+Z)</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleRedo}
-                    disabled={isRedoDisabled}
-                    className={cn(isRedoDisabled && "opacity-50")}
-                  >
-                    <Redo className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Redo (Ctrl+Shift+Z)</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <div className="flex items-center border rounded-md border-gray-700">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleZoomOut}
-                title="Zoom Out"
-              >
-                <ZoomOut className="h-4 w-4" />
-              </Button>
-              <span className="text-sm font-medium w-12 text-center">
-                {zoom}%
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleZoomIn}
-                title="Zoom In"
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-red-500 hover:bg-red-900/20"
-              onClick={() => {
-                if (!selectedObject || !Array.isArray(selectedObject)) return;
-
-                selectedObject.forEach((obj) => {
-                  if (obj && obj.canvas) {
-                    const canvas = obj.canvas;
-                    canvas.remove(obj);
-
-                    // Remove the corresponding layer
-                    const layerToRemove = layers.find((l) => l.object === obj);
-                    if (layerToRemove) {
-                      handleLayerDelete(layerToRemove.id);
-                    }
-                  }
-                });
-
-                setSelectedObject([]);
-                toast.success(
-                  `${selectedObject.length} object${
-                    selectedObject.length !== 1 ? "s" : ""
-                  } deleted`
-                );
-              }}
-              disabled={
-                !selectedObject ||
-                !Array.isArray(selectedObject) ||
-                selectedObject.length === 0
-              }
-              title={`Delete selected (${
-                Array.isArray(selectedObject) ? selectedObject.length : 0
-              } items)`}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="flex-1 overflow-hidden bg-gray-800">
-          <div className="h-full w-full flex items-center justify-center p-4">
-            <Canvas
-              activeTool={activeTool}
-              zoom={zoom}
-              setSelectedObject={setSelectedObject}
-              layers={layers}
-              setLayers={setLayers}
-              activeLayerId={activeLayerId}
-              setActiveLayerId={setActiveLayerId}
-              onCanvasInitialized={handleCanvasInitialized}
-              brushColor={brushColor}
-              brushWidth={brushWidth}
-              eraserWidth={eraserWidth}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Confirmation Dialog */}
-      <ConfirmDialog
-        open={showNavigationDialog}
-        onOpenChange={setShowNavigationDialog}
-        title="Leave without saving?"
-        description="You have unsaved changes. If you leave now, your changes will be lost."
-        confirmLabel="Leave anyway"
-        cancelLabel="Stay"
-        onConfirm={handleConfirmNavigation}
-        destructive={true}
+    <div className="flex flex-1 h-full">
+      <SidebarNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        className="h-full"
       />
+      <div className="flex-1 flex flex-col bg-[#171717] overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="icon" onClick={handleUndo} disabled={!canUndo}>
+              <Undo className="w-4 h-4" />
+              <span className="sr-only">Undo</span>
+            </Button>
+            <Button variant="outline" size="icon" onClick={handleRedo} disabled={!canRedo}>
+              <Redo className="w-4 h-4" />
+              <span className="sr-only">Redo</span>
+            </Button>
+            <Button variant="outline" size="icon" onClick={handleZoomIn}>
+              <ZoomIn className="w-4 h-4" />
+              <span className="sr-only">Zoom In</span>
+            </Button>
+            <Button variant="outline" size="icon" onClick={handleZoomOut}>
+              <ZoomOut className="w-4 h-4" />
+              <span className="sr-only">Zoom Out</span>
+            </Button>
+            <div className="flex items-center space-x-2">
+              <Input
+                type="number"
+                className="w-16 h-9 bg-gray-800 text-white border-gray-700"
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+              />
+              <Slider
+                min={10}
+                max={200}
+                step={10}
+                value={[zoom]}
+                onValueChange={(value) => handleZoomChange(value)}
+                className="w-24"
+              />
+            </div>
+          </div>
+          <div>{/* Right side toolbar items if needed */}</div>
+        </div>
+        <div className="flex flex-1 overflow-hidden">
+          <div className={`transition-all duration-300 ${
+            activeTab === "tools" || activeTab === "colors" || activeTab === "layers" 
+              ? "w-72 min-w-72" 
+              : "w-0 min-w-0"
+            } bg-[#2A2A2A] overflow-hidden`}>
+            <ScrollArea className="h-full p-4">
+              {renderActiveTabContent()}
+            </ScrollArea>
+          </div>
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1 relative">
+              <Canvas
+                activeTool={activeTool}
+                zoom={zoom}
+                setSelectedObject={setSelectedObject}
+                setLayers={setLayers}
+                layers={layers}
+                activeLayerId={activeLayerId}
+                setActiveLayerId={setActiveLayerId}
+                onCanvasInitialized={handleCanvasInitialized}
+                brushColor={brushColor}
+                brushWidth={brushWidth}
+                eraserWidth={eraserWidth}
+                textProperties={textProperties}
+              />
+            </div>
+            <div className="h-10 border-t border-gray-700 p-2 text-white text-sm flex items-center justify-between">
+              <p>
+                Selected object:{" "}
+                {selectedObject.length > 0
+                  ? selectedObject.length > 1
+                    ? `${selectedObject.length} objects`
+                    : selectedObject[0].type
+                  : "None"}
+              </p>
+              <p>Zoom: {zoom}%</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
