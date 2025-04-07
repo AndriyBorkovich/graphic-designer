@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useHistoryManager } from "@/hooks/useHistoryManager";
+import { fabric } from "fabric";
 
 interface Layer {
   id: string;
@@ -260,6 +261,102 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }));
   };
 
+  // Handler functions for layer operations
+  const handleLayerSelect = (layerId: string) => {
+    setActiveLayerId(layerId);
+    
+    // Find the corresponding layer and set it as active object in canvas
+    const selectedLayer = layers.find(layer => layer.id === layerId);
+    if (selectedLayer && selectedLayer.type !== "background" && fabricCanvas) {
+      fabricCanvas.setActiveObject(selectedLayer.object);
+      fabricCanvas.renderAll();
+    }
+  };
+  
+  const handleLayerVisibilityToggle = (layerId: string) => {
+    setLayers(prevLayers => 
+      prevLayers.map(layer => {
+        if (layer.id === layerId) {
+          const updatedLayer = { ...layer, visible: !layer.visible };
+          if (layer.object) {
+            layer.object.visible = !layer.visible;
+          }
+          return updatedLayer;
+        }
+        return layer;
+      })
+    );
+    
+    if (fabricCanvas) {
+      fabricCanvas.renderAll();
+    }
+  };
+  
+  const handleLayerAdd = () => {
+    // Placeholder for now - typically would add a new layer
+    toast.info("Layer add functionality coming soon");
+  };
+  
+  const handleLayerDelete = (layerId: string) => {
+    const layerToDelete = layers.find(layer => layer.id === layerId);
+    
+    if (layerToDelete && layerToDelete.type !== "background" && fabricCanvas) {
+      fabricCanvas.remove(layerToDelete.object);
+      
+      setLayers(prevLayers => 
+        prevLayers.filter(layer => layer.id !== layerId)
+      );
+      
+      if (activeLayerId === layerId) {
+        setActiveLayerId(null);
+      }
+    }
+  };
+  
+  const handleLayerMoveUp = (layerId: string) => {
+    if (!fabricCanvas) return;
+    
+    const layerIndex = layers.findIndex(layer => layer.id === layerId);
+    if (layerIndex > 0 && layerIndex < layers.length) {
+      const layerToMove = layers[layerIndex];
+      
+      if (layerToMove.type !== "background") {
+        fabricCanvas.bringForward(layerToMove.object);
+        
+        // Update layers array
+        setLayers(prevLayers => {
+          const newLayers = [...prevLayers];
+          const temp = newLayers[layerIndex - 1];
+          newLayers[layerIndex - 1] = newLayers[layerIndex];
+          newLayers[layerIndex] = temp;
+          return newLayers;
+        });
+      }
+    }
+  };
+  
+  const handleLayerMoveDown = (layerId: string) => {
+    if (!fabricCanvas) return;
+    
+    const layerIndex = layers.findIndex(layer => layer.id === layerId);
+    if (layerIndex >= 0 && layerIndex < layers.length - 1) {
+      const layerToMove = layers[layerIndex];
+      
+      if (layerToMove.type !== "background") {
+        fabricCanvas.sendBackwards(layerToMove.object);
+        
+        // Update layers array
+        setLayers(prevLayers => {
+          const newLayers = [...prevLayers];
+          const temp = newLayers[layerIndex + 1];
+          newLayers[layerIndex + 1] = newLayers[layerIndex];
+          newLayers[layerIndex] = temp;
+          return newLayers;
+        });
+      }
+    }
+  };
+
   // Render active tab content
   const renderActiveTabContent = () => {
     switch (activeTab) {
@@ -284,9 +381,13 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         return (
           <LayersTab
             layers={layers}
-            setLayers={setLayers}
             activeLayerId={activeLayerId}
-            setActiveLayerId={setActiveLayerId}
+            onLayerSelect={handleLayerSelect}
+            onLayerVisibilityToggle={handleLayerVisibilityToggle}
+            onLayerAdd={handleLayerAdd}
+            onLayerDelete={handleLayerDelete}
+            onLayerMoveUp={handleLayerMoveUp}
+            onLayerMoveDown={handleLayerMoveDown}
           />
         );
       default:
