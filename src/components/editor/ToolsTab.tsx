@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,8 +38,6 @@ interface ToolsTabProps {
   setActiveTool: (tool: string) => void;
   isDarkMode?: boolean;
   brushColor?: string;
-  brushWidth?: number;
-  onBrushWidthChange?: (width: number) => void;
   onBrushColorChange?: (color: string) => void;
   onTextPropertyChange?: (property: string, value: any) => void;
   textProperties?: {
@@ -60,8 +57,6 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
   setActiveTool,
   isDarkMode = true,
   brushColor = "#000000",
-  brushWidth = 5,
-  onBrushWidthChange,
   onBrushColorChange,
   onTextPropertyChange,
   textProperties = {
@@ -165,30 +160,6 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({
           </Tooltip>
         ))}
       </div>
-
-      {/* Pen Width Control */}
-      {activeTool === "draw" && (
-        <div className="mt-4 space-y-4">
-          <h4 className="text-sm font-medium mb-2 text-white">Brush width</h4>
-          <div>
-            <div className="flex justify-between items-center">
-              <Label htmlFor="brush-width" className="text-xs text-white">
-                Width
-              </Label>
-              <span className="text-xs text-white">{brushWidth}px</span>
-            </div>
-            <Slider
-              id="brush-width"
-              min={1}
-              max={50}
-              step={1}
-              value={[brushWidth]}
-              onValueChange={(value) => onBrushWidthChange?.(value[0])}
-              className="my-2"
-            />
-          </div>
-        </div>
-      )}
 
       {/* Eraser Width Control */}
       {activeTool === "eraser" && (

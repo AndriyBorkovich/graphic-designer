@@ -38,7 +38,6 @@ interface CanvasProps {
   setActiveLayerId: (layerId: string | null) => void;
   onCanvasInitialized?: (canvas: fabric.Canvas) => void;
   brushColor?: string;
-  brushWidth?: number;
   eraserWidth?: number;
   textProperties?: {
     fontSize?: number;
@@ -64,7 +63,6 @@ export const Canvas: React.FC<CanvasProps> = ({
   setActiveLayerId,
   onCanvasInitialized,
   brushColor = "#000000",
-  brushWidth = 5,
   eraserWidth = 20,
   textProperties = {
     fontSize: 18,
@@ -397,7 +395,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         canvas.isDrawingMode = true;
         // Create a new brush to ensure we're not using the eraser
         const drawingBrush = new fabric.PencilBrush(canvas);
-        drawingBrush.width = brushWidth;
+        drawingBrush.width = 5;
         drawingBrush.color = brushColor;
         canvas.freeDrawingBrush = drawingBrush;
         break;
@@ -470,19 +468,14 @@ export const Canvas: React.FC<CanvasProps> = ({
       canvas.off("mouse:up");
       canvas.off("erasing:end");
     };
-  }, [activeTool, canvas, setLayers, brushColor, brushWidth, eraserWidth]);
+  }, [activeTool, canvas, setLayers, brushColor, eraserWidth]);
 
-  // Update brush properties when they change
+  // Update brush color when it changes
   useEffect(() => {
-    if (canvas && canvas.isDrawingMode && canvas.freeDrawingBrush) {
-      if (activeTool === "draw") {
-        canvas.freeDrawingBrush.color = brushColor;
-        canvas.freeDrawingBrush.width = brushWidth;
-      } else if (activeTool === "eraser") {
-        canvas.freeDrawingBrush.width = eraserWidth;
-      }
+    if (canvas && canvas.isDrawingMode) {
+      canvas.freeDrawingBrush.color = brushColor;
     }
-  }, [brushColor, brushWidth, eraserWidth, activeTool, canvas]);
+  }, [brushColor, canvas]);
 
   // Rectangle Drawing
   const startAddingRect = (e: fabric.IEvent<MouseEvent>) => {
